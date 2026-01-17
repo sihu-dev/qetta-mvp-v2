@@ -289,4 +289,50 @@ cd mcp-servers/qetta-mcp && pnpm build
 
 ---
 
+## Rebuild Plan v4.0
+
+> **docs/rebuild-plan/** 폴더에 상세 기획 문서 포함
+
+### 핵심 원칙
+```
+"문서를 파싱하려 하지 말고, 데이터 소스를 바꿔라"
+HWP/PDF 파싱 ❌ → API 수집 ✅
+```
+
+### 아키텍처
+```
+┌─────────────────────────────────────────────┐
+│              QETTA v4.0                      │
+├─────────────────────────────────────────────┤
+│  Qetta.Tender (NEW)                         │
+│    - Collectors: G2B, UNGM, SAM, KZ         │
+│    - Generators: DOCX, XLSX, PPTX, ZIP      │
+├─────────────────────────────────────────────┤
+│  Shared AGI Engine (EXTEND)                 │
+│    - 기존: orchestrator, memory, reasoning  │
+│    - 신규: bid-analyzer, fit-scorer         │
+├─────────────────────────────────────────────┤
+│  Qetta.Evidence (KEEP)                      │
+│    - govzip, evidence-registry              │
+└─────────────────────────────────────────────┘
+```
+
+### Phase 체크리스트
+- [x] Phase 1: 기반 구축 (패키지, 디렉토리, DB)
+- [ ] Phase 2: 수집기 (G2B P0, UNGM P1, SAM P2)
+- [ ] Phase 3: 분석기 (BidAnalyzer, FitScorer)
+- [ ] Phase 4: 문서 생성 (DOCX, XLSX, PPTX)
+- [ ] Phase 5: 통합 테스트
+
+### 참조 문서
+| 파일 | 내용 |
+|------|------|
+| `docs/rebuild-plan/00_MASTER_PLAN.md` | 전체 아키텍처 |
+| `docs/rebuild-plan/01_PHASE1_FOUNDATION.md` | 기반 구축 |
+| `docs/rebuild-plan/02_PHASE2_COLLECTORS.md` | 수집기 |
+| `docs/rebuild-plan/03_PHASE3_4_ANALYZERS_GENERATORS.md` | 분석/생성기 |
+| `docs/rebuild-plan/04_QUICK_REFERENCE.md` | 빠른 참조 |
+
+---
+
 *Last Updated: 2026-01-18*
