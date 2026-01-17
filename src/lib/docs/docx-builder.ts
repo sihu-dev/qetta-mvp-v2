@@ -15,10 +15,7 @@ import {
   AlignmentType,
   Packer,
   PageBreak,
-  Header,
-  Footer,
   ImageRun,
-  BorderStyle,
 } from 'docx';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -313,7 +310,6 @@ export class DocxBuilder {
                 width: section.image.width || 400,
                 height: section.image.height || 300,
               },
-              type: 'png',
             }),
           ],
           alignment: AlignmentType.CENTER,

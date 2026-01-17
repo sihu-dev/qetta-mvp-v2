@@ -8,7 +8,7 @@ export { G2BCollector } from './g2b-collector';
 // export { SAMCollector } from './sam-collector';     // P2
 // export { KZCollector } from './kz-collector';       // P2
 
-import type { BidSource, CollectorConfig } from '../types';
+import type { BidSource } from '../types';
 import { G2BCollector } from './g2b-collector';
 import { BaseCollector } from './base-collector';
 

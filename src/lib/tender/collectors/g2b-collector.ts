@@ -5,7 +5,7 @@
  */
 
 import axios from 'axios';
-import type { Bid, CollectorConfig, CollectResult, Currency } from '../types';
+import type { Bid, CollectResult, Currency } from '../types';
 import { BaseCollector } from './base-collector';
 
 interface G2BRawBid {

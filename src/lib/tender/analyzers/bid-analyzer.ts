@@ -54,6 +54,7 @@ export async function analyzeBid(
 }
 
 interface CompanyProfile {
+  business_number?: string;
   certifications: string[];
   experience_years: number;
   past_wins: number;
@@ -64,14 +65,25 @@ async function checkQualifications(
   bid: Bid,
   profile: CompanyProfile
 ): Promise<QualificationCheck[]> {
-  // TODO: Implement qualification checking logic
-  // This will use AI to parse requirements from bid description
-  return [
-    {
-      requirement: 'Business registration',
-      met: true,
-    },
-  ];
+  // TODO: Implement full qualification checking logic using AI
+  // For now, return basic checks based on bid and profile data
+  const checks: QualificationCheck[] = [];
+
+  // Basic registration check
+  checks.push({
+    requirement: 'Business registration',
+    met: !!profile.business_number,
+  });
+
+  // Budget check (if company has enough revenue)
+  if (bid.budget && profile.revenue) {
+    checks.push({
+      requirement: 'Financial capacity',
+      met: profile.revenue >= bid.budget * 0.1,
+    });
+  }
+
+  return checks;
 }
 
 async function estimateCompetition(bid: Bid): Promise<CompetitionLevel> {

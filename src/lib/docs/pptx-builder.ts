@@ -47,7 +47,7 @@ export interface PptTableData {
 // Qetta 브랜드 컬러
 const QETTA_PURPLE = '9333EA';
 const QETTA_DARK = '1F2937';
-const QETTA_LIGHT = 'F3E8FF';
+// const QETTA_LIGHT = 'F3E8FF'; // Reserved for future use
 
 export class PptxBuilder {
   private pptx: PptxGenJS;
@@ -264,7 +264,7 @@ export class PptxBuilder {
         options: {
           fontSize: 16,
           color: QETTA_DARK,
-          bullet: { type: 'bullet', color: QETTA_PURPLE },
+          bullet: { type: 'bullet' as const, color: QETTA_PURPLE },
           paraSpaceAfter: 8,
         },
       }));
