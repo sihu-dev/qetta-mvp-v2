@@ -1,197 +1,156 @@
-# Qetta MVP v2 - Claude Code Configuration
+# Qetta MVP v2
 
-> **GitHub Claude App / Mobile 호환**
-> 통합 플랫폼: OTT칩 → AI 예지보전 → 문서 자동화 → 정부 증빙
-
----
-
-## Project Info
-
-- **Name**: Qetta
-- **Slogan**: in·ev·it·able
-- **Tagline**: Data Flows. Evidence Follows.
-- **Primary Color**: #9333ea (Purple)
-- **Working Directory**: `/home/sihu2/qetta-mvp-v2`
-- **GitHub**: https://github.com/sihu-dev/qetta-mvp-v2
-- **Production**: https://qetta-mvp-v2.vercel.app
+> **Production-Level Web App**
+> 스마트공장 + AI바우처 + 제조 설비 공급/수요 Pool 타겟
 
 ---
 
-## Core Vision
+## Brand
 
-**"in·ev·it·able - Data Flows. Evidence Follows."**
+| | |
+|---|---|
+| **Name** | Qetta |
+| **Slogan** | in·ev·it·able |
+| **Tagline** | Data Flows. Evidence Follows. |
+| **Color** | #9333ea (Purple) |
 
-OTT칩으로 설비 데이터 수집 → AI로 예지보전 → 문서 자동 생성 → 정부 증빙 제출
+---
 
-### 통합 파이프라인
+## Target Market
+
+### 타겟 Pool
+- **Pool SI** (로봇셀 통합사업자): 10,432개사
+- **스마트공장** 수요기업 (기초/고도화)
+- **AI바우처** 수요기업
+- **디지털트윈** 참여기업
+
+### 고객 페르소나
+1. **취장님** - 제조업 대표 (엑셀 친숙)
+2. **설비 공급업체** - Pool SI, 설비 제조사
+3. **정부 담당자** - 지원사업 심사/관리
+
+### 고객 가치 제안 (CVP)
+- OTT칩 **50만원** = MES 대비 99% 비용 절감
+- **불량 -30%** | **정지 -80%** | **ROI 0.7개월**
+- 정부 제출 증빙 **자동화** (Gov ZIP)
+
+---
+
+## Core Pipeline
+
 ```
 [OTT칩] → [AI 예지보전] → [Evidence Registry] → [Document Skills] → [정부 제출]
    ↓           ↓                  ↓                    ↓
-데이터 수집   고장/불량 예측    Gov ZIP 보관      DOCX/XLSX/PPTX
+10분 설치    72h 예측        Gov ZIP 보관      DOCX/XLSX/PPTX
+50만원       고장/불량        MANIFEST v1.2     입찰 제안서
 ```
 
 ### 핵심 모듈
-1. **OTT칩**: 10분 설치, 50만원, 플러그앤플레이 (설비 데이터 수집)
-2. **AI 예지보전**: 고장/불량 72시간 전 예측
-3. **Evidence Registry**: Gov ZIP 패키지 (MANIFEST v1.2, 변조 탐지 가능)
-4. **Document Skills**: DOCX/XLSX/PPTX 자동생성 (docx, exceljs, pptxgenjs)
+| 모듈 | 설명 | 정부사업 연계 |
+|------|------|--------------|
+| **OTT칩** | 플러그앤플레이 데이터 수집 | 스마트공장 기초 (자동수집) |
+| **AI 예지보전** | 72시간 전 고장/불량 예측 | AI바우처 |
+| **Evidence Registry** | Gov ZIP (변조 탐지 가능) | 증빙 제출 |
+| **Document Skills** | DOCX/XLSX/PPTX 자동생성 | 제안서/보고서 |
 
 ### 부가 모듈
-- **Tender**: 입찰 수집/분석/문서생성 (G2B, UNGM, SAM, KZ)
-- **Real-time Alert**: 카카오/슬랙/이메일 알림
-
----
-
-## Trigger System
-
-### 'ㄱ' 트리거 (Autonomous Self-Healing Growth Mode)
-
-사용자가 'ㄱ'만 입력하면 자동으로 최적 작업 선택 및 실행
-
-**자동 활성화 순서:**
-1. 메모리 MCP 자동 로드
-2. 현재 상태 분석 (git, build, test)
-3. TODO 리스트 동기화
-4. 최적 작업 자동 선택
-5. 품질 게이트 자동 실행
-6. 성공 시 자동 커밋
-7. 다음 작업 자동 제안
-
-**품질 게이트:**
-```bash
-pnpm tsc --noEmit    # TypeScript strict
-pnpm lint            # ESLint
-pnpm build           # Next.js 빌드
-```
-
-**권한:**
-- 자율: code/file/package/test/commit
-- 승인 필요: push/deploy
+- **Tender**: 입찰 수집/분석 (G2B, UNGM, SAM, KZ)
+- **Real-time Alert**: 카카오/슬랙/이메일
 
 ---
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router), React 19
-- **Styling**: Tailwind CSS
-- **Database**: Supabase PostgreSQL + pgvector
-- **AI**: Claude API (@anthropic-ai/sdk)
-- **Documents**: docx, exceljs, pptxgenjs, archiver
-- **HTTP**: axios, xml2js
-- **Package Manager**: pnpm
+| Category | Stack |
+|----------|-------|
+| Framework | Next.js 15, React 19 |
+| Styling | Tailwind CSS |
+| Database | Supabase PostgreSQL + pgvector |
+| AI | Claude API |
+| Documents | docx, exceljs, pptxgenjs |
+| HTTP | axios, xml2js |
 
 ---
 
 ## Project Structure
 
 ```
-qetta-mvp-v2/
-├── src/
-│   ├── app/
-│   │   ├── dashboard/
-│   │   │   ├── evidence/   # Evidence Registry UI
-│   │   │   ├── agi/        # Tech Combiner UI
-│   │   │   └── tender/     # Tender UI
-│   │   └── api/
-│   │       ├── evidence/   # Evidence API
-│   │       ├── agi/        # AGI API
-│   │       └── tender/     # Tender API
-│   └── lib/
-│       ├── agi/            # AGI 모듈 (Ultra Thinking)
-│       ├── docs/           # Document Skills (docx/xlsx/pptx)
-│       ├── govzip/         # Evidence Registry (MANIFEST v1.2)
-│       ├── tender/         # Tender 모듈
-│       │   ├── collectors/ # G2B, UNGM, SAM, KZ
-│       │   ├── analyzers/
-│       │   └── generators/
-│       └── brand/          # 브랜드 상수
-├── docs/
-│   └── rebuild-plan/       # v4.0 리빌드 계획
-└── supabase/
-    └── migrations/
+src/
+├── app/
+│   ├── dashboard/
+│   │   ├── evidence/    # Gov ZIP UI
+│   │   ├── agi/         # Tech Combiner
+│   │   └── tender/      # 입찰 관리
+│   └── api/
+│       ├── evidence/
+│       ├── agi/
+│       └── tender/
+└── lib/
+    ├── agi/             # Ultra Thinking
+    ├── docs/            # docx/xlsx/pptx
+    ├── govzip/          # MANIFEST v1.2
+    └── tender/          # collectors/analyzers
 ```
 
 ---
 
 ## 3-Tier Intelligence
 
-| Tier | 비율 | 방식 | 비용 |
-|------|------|------|------|
+| Tier | % | Method | Cost |
+|------|---|--------|------|
 | 1 | 95% | Rule-based | 0원 |
 | 2 | 4% | ML (pgvector) | 50만원/년 |
-| 3 | 1% | Claude API | 600만원/년 (cap) |
+| 3 | 1% | Claude API | 600만원/년 |
 
 ---
 
-## Database Tables
+## Trigger 'ㄱ'
 
-### Core
-- `organizations`, `org_members`, `events`, `actions`
+사용자가 'ㄱ'만 입력하면 자동 작업 실행
 
-### Evidence
-- `evidence_snapshots`: Gov ZIP 스냅샷
-
-### AGI
-- `memory_entries`: 벡터 메모리 (pgvector)
-- `agi_insights`: 인사이트
-
-### Tender
-- `bids`, `bid_analyses`, `generated_documents`
+1. 메모리 로드
+2. git/build/test 상태 분석
+3. 최적 작업 선택
+4. 품질 게이트: `tsc → lint → build`
+5. 자동 커밋 (push는 승인 필요)
 
 ---
 
-## MANIFEST v1.2 Spec
+## Quality Gate
 
-```typescript
-interface ManifestV1_2 {
-  manifest_version: '1.2';
-  org_id: string;
-  created_at: string;
-  period: { start: string; end: string; };
-  counts: { events: number; actions: number; alarms: number; };
-  files: Array<{ name: string; hash: string; size: number; }>;
-  package_hash: string;
-  retention_hint: { years: number; note: string; };
-}
+```bash
+pnpm tsc --noEmit    # TypeScript
+pnpm lint            # ESLint
+pnpm build           # Next.js
 ```
 
 ---
 
-## Rebuild Plan v4.0
+## Rebuild Phase
 
-> **docs/rebuild-plan/** 참조
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 1 | ✅ | 기반 구축 (패키지, 디렉토리, DB) |
+| 2 | 🔄 | 수집기 (G2B ✅, UNGM/SAM/KZ) |
+| 3 | ⏳ | 분석기 (BidAnalyzer, FitScorer) |
+| 4 | ⏳ | 문서 생성 통합 |
+| 5 | ⏳ | E2E 테스트 |
 
-### Phase 진행
-- [x] Phase 1: 기반 구축 (패키지, 디렉토리, DB)
-- [~] Phase 2: 수집기 (G2B 완료, UNGM/SAM/KZ 진행중)
-- [ ] Phase 3: 분석기 (BidAnalyzer, FitScorer)
-- [ ] Phase 4: 문서 생성 통합 테스트
-- [ ] Phase 5: E2E 테스트
+---
 
-### 핵심 원칙
-```
-"문서를 파싱하려 하지 말고, 데이터 소스를 바꿔라"
-HWP/PDF 파싱 ❌ → API 수집 ✅
-```
+## Links
+
+- **GitHub**: https://github.com/sihu-dev/qetta-mvp-v2
+- **Production**: https://qetta-mvp-v2.vercel.app
+- **Docs**: `docs/rebuild-plan/`
 
 ---
 
 ## Security
 
-- **사용**: "변조 탐지 가능" (tamper-evident)
-- **금지**: "위조 불가능" (tamper-proof)
+- ✅ "변조 탐지 가능" (tamper-evident)
+- ❌ "위조 불가능" (tamper-proof) - 사용 금지
 
 ---
 
-## Quick Commands
-
-```bash
-pnpm dev          # 개발
-pnpm tsc --noEmit # 타입 체크
-pnpm lint         # 린트
-pnpm build        # 빌드
-```
-
----
-
-*Last Updated: 2026-01-18*
+*Updated: 2026-01-18*
