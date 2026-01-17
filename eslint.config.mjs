@@ -19,6 +19,7 @@ const eslintConfig = [
       "node_modules/**",
       "mcp-servers/**",
       "salient-template/**",
+      "next-env.d.ts",
     ],
   },
 ];
