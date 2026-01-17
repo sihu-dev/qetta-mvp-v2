@@ -1,0 +1,82 @@
+{
+  "$schema": "https://claude.ai/claude-code/settings.schema.json",
+  "name": "qetta-mvp-v2",
+  "description": "Qetta MVP v2 - Evidence Registry & Tech Combiner Platform",
+  "version": "4.0.0",
+  "brand": {
+    "name": "Qetta",
+    "slogan": "in·ev·it·able",
+    "tagline": "Data Flows. Evidence Follows.",
+    "colors": {
+      "primary": "#9333ea",
+      "secondary": "#a855f7"
+    }
+  },
+  "mcpServers": {
+    "qetta-mcp": {
+      "command": "node",
+      "args": ["./mcp-servers/qetta-mcp/index.js"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
+      }
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/memory-mcp"]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/supabase-mcp"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/github-mcp"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  },
+  "skills": {
+    "autoActivate": [
+      "typescript-patterns",
+      "nextjs-app-router",
+      "react-component",
+      "database"
+    ]
+  },
+  "commands": {
+    "evidence": ".claude/commands/evidence.md",
+    "proposal": ".claude/commands/proposal.md",
+    "techstack": ".claude/commands/techstack.md",
+    "govzip": ".claude/commands/govzip.md",
+    "analyze": ".claude/commands/analyze.md"
+  },
+  "hooks": {
+    "preCommit": {
+      "command": "npm run lint && npm run type-check",
+      "description": "Run lint and type check before commit"
+    },
+    "postCreate": {
+      "command": "npm install",
+      "description": "Install dependencies after project creation"
+    }
+  },
+  "preferences": {
+    "language": "ko",
+    "codeStyle": {
+      "quotes": "single",
+      "semicolons": true,
+      "indentation": 2
+    },
+    "documentation": {
+      "jsdoc": true,
+      "korean": true
+    }
+  }
+}

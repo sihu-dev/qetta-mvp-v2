@@ -1,0 +1,78 @@
+{
+  "name": "qetta-mvp-v2",
+  "version": "4.0.0",
+  "private": true,
+  "description": "Qetta MVP v4.0 - Evidence + Tender",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
+  },
+  "browserslist": "defaults, not ie <= 11",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.33.1",
+    "@headlessui/react": "^2.2.6",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.90.1",
+    "@tailwindcss/forms": "^0.5.10",
+    "adm-zip": "^0.5.16",
+    "archiver": "^7.0.0",
+    "axios": "^1.7.0",
+    "clsx": "^2.1.1",
+    "docx": "^8.5.0",
+    "exceljs": "^4.4.0",
+    "iconv-lite": "^0.7.2",
+    "lucide-react": "^0.562.0",
+    "next": "^15",
+    "node-cron": "^3.0.3",
+    "pptxgenjs": "^3.12.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "tailwind-merge": "^3.4.0",
+    "xml2js": "^0.6.2",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@types/adm-zip": "^0.5.7",
+    "@types/archiver": "^6.0.2",
+    "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/xml2js": "^0.4.14",
+    "@vitejs/plugin-react": "^5.1.2",
+    "eslint": "^9",
+    "eslint-config-next": "^15",
+    "husky": "^9.1.7",
+    "jsdom": "^27.4.0",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.0",
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "sharp": "0.34.3",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^4.0.17"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}
