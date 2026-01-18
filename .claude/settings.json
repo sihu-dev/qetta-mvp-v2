@@ -41,15 +41,18 @@
       "Bash(eval *)",
       "Bash(* /etc/passwd)",
       "Bash(* /etc/shadow)",
-      "Read(.env)",
-      "Read(.env.*)",
-      "Read(*credentials*)",
-      "Read(*secret*)",
-      "Read(*.pem)",
-      "Edit(.env)",
-      "Edit(.env.*)",
-      "Write(.env)",
-      "Write(.env.*)"
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./*credentials*)",
+      "Read(./*secret*)",
+      "Read(./*.pem)",
+      "Read(~/.aws/**)",
+      "Read(~/.ssh/**)",
+      "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Write(./.env)",
+      "Write(./.env.*)"
     ]
   },
   "hooks": {
