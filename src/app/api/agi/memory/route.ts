@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import type { MemoryEntry, MemoryType } from '@/lib/agi/types';
+import { metrics } from '@/lib/metrics';
 
 export interface MemorySearchRequest {
   orgId: string;
@@ -28,6 +29,9 @@ export interface MemoryStoreRequest {
  * GET /api/agi/memory - Search memories
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  let statusCode = 200;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const orgId = searchParams.get('orgId');
@@ -36,6 +40,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
 
     if (!orgId) {
+      statusCode = 400;
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
     }
 
@@ -88,10 +93,13 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Memory Search Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('GET', '/api/agi/memory', statusCode, (Date.now() - startTime) / 1000);
   }
 }
 
@@ -99,11 +107,15 @@ export async function GET(request: NextRequest) {
  * POST /api/agi/memory - Store a new memory
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  let statusCode = 200;
+
   try {
     const body: MemoryStoreRequest = await request.json();
     const { orgId, type, content, metadata } = body;
 
     if (!orgId || !type || !content) {
+      statusCode = 400;
       return NextResponse.json(
         { error: 'Missing required fields: orgId, type, content' },
         { status: 400 }
@@ -145,10 +157,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Memory Store Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('POST', '/api/agi/memory', statusCode, (Date.now() - startTime) / 1000);
   }
 }
 
@@ -156,11 +171,15 @@ export async function POST(request: NextRequest) {
  * DELETE /api/agi/memory - Delete a memory
  */
 export async function DELETE(request: NextRequest) {
+  const startTime = Date.now();
+  let statusCode = 200;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
+      statusCode = 400;
       return NextResponse.json({ error: 'Missing memory id' }, { status: 400 });
     }
 
@@ -176,9 +195,12 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('Memory Delete Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('DELETE', '/api/agi/memory', statusCode, (Date.now() - startTime) / 1000);
   }
 }
