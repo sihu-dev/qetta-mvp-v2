@@ -56,8 +56,8 @@ function buildCSP(nonce: string): string {
     'font-src': ["'self'", 'data:'],
     'connect-src': [
       "'self'",
-      // Supabase
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      // Supabase (trim to remove any trailing whitespace/newlines)
+      (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
       // Sentry
       'https://*.ingest.sentry.io',
       'https://*.sentry.io',
