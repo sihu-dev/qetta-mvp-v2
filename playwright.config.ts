@@ -1,10 +1,24 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config({ path: '.env.local' });
 
 /**
  * Qetta MVP E2E Test Configuration
  *
+ * Projects:
+ * - setup: 인증 셋업 (storageState 생성)
+ * - public: 인증 불필요 테스트 (landing, api)
+ * - authenticated: 인증 필요 테스트 (X-E2E-Test-Token 헤더로 우회)
+ *
  * @see https://playwright.dev/docs/test-configuration
  */
+
+const STORAGE_STATE = path.join(__dirname, 'playwright/.auth/user.json');
+const E2E_TEST_SECRET = process.env.E2E_TEST_SECRET || 'e2e-test-secret-dev-only-2024';
+
 export default defineConfig({
   // Test directory
   testDir: './e2e',
@@ -44,9 +58,37 @@ export default defineConfig({
 
   // Configure projects for major browsers
   projects: [
+    // 1. 인증 셋업 프로젝트 (먼저 실행)
     {
-      name: 'chromium',
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
+
+    // 2. 인증이 필요없는 테스트 (public)
+    {
+      name: 'public',
+      testMatch: ['**/landing.spec.ts', '**/api.spec.ts'],
       use: { ...devices['Desktop Chrome'] },
+    },
+
+    // 3. 인증이 필요한 테스트 (authenticated)
+    // X-E2E-Test-Token 헤더로 인증 우회
+    {
+      name: 'authenticated',
+      testMatch: [
+        '**/dashboard.spec.ts',
+        '**/tender.spec.ts',
+        '**/evidence.spec.ts',
+        '**/agi.spec.ts',
+      ],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: STORAGE_STATE,
+        extraHTTPHeaders: {
+          'X-E2E-Test-Token': E2E_TEST_SECRET,
+        },
+      },
+      dependencies: ['setup'],
     },
   ],
 
