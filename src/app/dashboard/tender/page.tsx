@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   ArrowPathIcon,
   DocumentTextIcon,
@@ -305,10 +306,13 @@ export default function TenderPage() {
                   )}
                   {analyzingId === tender.id ? '분석중...' : SERVICE_WORDING.tender.analyze}
                 </button>
-                <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <Link
+                  href={`/dashboard/tender/${tender.id}`}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
                   <DocumentTextIcon className="w-4 h-4" />
                   상세보기
-                </button>
+                </Link>
               </div>
             </div>
           ))}

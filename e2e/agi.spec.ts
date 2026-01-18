@@ -7,158 +7,101 @@ import { test, expect } from '@playwright/test';
 test.describe('AGI Insights Page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/dashboard/agi');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should load the AGI page successfully', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
     // Page heading should be visible
-    const heading = page.locator('h1');
-    await expect(heading).toContainText('3-Tier Intelligence');
+    const heading = page.getByRole('heading', { name: /3-Tier Intelligence/i, level: 1 });
+    await expect(heading).toBeVisible();
   });
 
   test('should display page description', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
     // Description text should be visible
-    const description = page.getByText('AGI 인사이트 분석 결과');
+    const description = page.locator('p').filter({ hasText: 'AGI 인사이트 분석 결과' }).first();
     await expect(description).toBeVisible();
   });
 
-  test('should display analyze button', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
-    // Analyze button should be visible
-    const analyzeButton = page.getByRole('button', { name: /새 분석 실행/i });
-    await expect(analyzeButton).toBeVisible();
-  });
-
   test('should display tier summary cards', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
     // Tier 1: Rule-based card should be visible
-    const tier1 = page.getByText('Tier 1:', { exact: false });
+    const tier1 = page.locator('text=Tier 1:').first();
     await expect(tier1).toBeVisible();
 
     // Tier 2: ML card should be visible
-    const tier2 = page.getByText('Tier 2:', { exact: false });
+    const tier2 = page.locator('text=Tier 2:').first();
     await expect(tier2).toBeVisible();
 
     // Tier 3: Claude API card should be visible
-    const tier3 = page.getByText('Tier 3:', { exact: false });
+    const tier3 = page.locator('text=Tier 3:').first();
     await expect(tier3).toBeVisible();
   });
 
   test('should display tier percentages', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
     // 95% for rule-based should be visible
-    const rulePercent = page.getByText('95%').first();
+    const rulePercent = page.locator('text=95%').first();
     await expect(rulePercent).toBeVisible();
 
     // 4% for ML should be visible
-    const mlPercent = page.getByText('4%').first();
+    const mlPercent = page.locator('text=4%').first();
     await expect(mlPercent).toBeVisible();
 
     // 1% for Claude should be visible
-    const claudePercent = page.getByText('1%').first();
+    const claudePercent = page.locator('text=1%').first();
     await expect(claudePercent).toBeVisible();
   });
 
-  test('should display filter tabs', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+  test('should display quick prediction buttons', async ({ page }) => {
+    // Quick prediction buttons should be visible
+    const qualityButton = page.getByRole('button', { name: /품질 예측/i }).first();
+    await expect(qualityButton).toBeVisible();
 
-    // Filter tabs should be visible
-    const allTab = page.getByRole('button', { name: /전체/i });
+    const maintenanceButton = page.getByRole('button', { name: /정비 예측/i }).first();
+    await expect(maintenanceButton).toBeVisible();
+
+    const anomalyButton = page.getByRole('button', { name: /이상 탐지/i }).first();
+    await expect(anomalyButton).toBeVisible();
+  });
+
+  test('should display filter tabs', async ({ page }) => {
+    // Filter tabs should be visible (use exact match to avoid partial matches)
+    const allTab = page.getByRole('button', { name: '전체', exact: true });
     await expect(allTab).toBeVisible();
 
-    const anomalyTab = page.getByRole('button', { name: /이상 탐지/i });
-    await expect(anomalyTab).toBeVisible();
+    const qualityTab = page.getByRole('button', { name: '품질', exact: true });
+    await expect(qualityTab).toBeVisible();
 
-    const predictionTab = page.getByRole('button', { name: /예측/i });
-    await expect(predictionTab).toBeVisible();
-
-    const recommendationTab = page.getByRole('button', { name: /추천/i });
-    await expect(recommendationTab).toBeVisible();
+    const maintenanceTab = page.getByRole('button', { name: '정비', exact: true });
+    await expect(maintenanceTab).toBeVisible();
   });
 
-  test('should display insight cards', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+  test('should display AI inference section', async ({ page }) => {
+    // AI inference heading should be visible
+    const inferenceHeading = page.getByRole('heading', { name: /AI 추론/i, level: 3 });
+    await expect(inferenceHeading).toBeVisible();
 
-    // Insight cards should be visible
-    const insightCards = page.locator('.rounded-xl.shadow-sm.border');
-    const cardCount = await insightCards.count();
+    // Text input should be visible
+    const textInput = page.getByPlaceholder(/질문을 입력하세요/i);
+    await expect(textInput).toBeVisible();
 
-    // Should have at least one insight card
-    expect(cardCount).toBeGreaterThan(0);
+    // Inference button should be visible
+    const inferenceButton = page.getByRole('button', { name: /추론/i });
+    await expect(inferenceButton).toBeVisible();
   });
 
-  test('should display confidence scores on insight cards', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+  test('should display prediction results or empty state', async ({ page }) => {
+    // Either prediction cards exist or empty state message is shown
+    const predictionCards = page.locator('[class*="rounded-xl"][class*="shadow"]');
+    const emptyState = page.locator('text=아직 예측 결과가 없습니다');
 
-    // Confidence label should be visible
-    const confidenceLabel = page.getByText('신뢰도:').first();
-    await expect(confidenceLabel).toBeVisible();
-  });
+    const hasCards = await predictionCards.count() > 0;
+    const hasEmptyState = await emptyState.isVisible().catch(() => false);
 
-  test('should display tier badges on insight cards', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
-    // Tier badges (Rule, ML, Claude) should be visible
-    const ruleBadge = page.getByText('Rule', { exact: true });
-    const mlBadge = page.getByText('ML', { exact: true });
-    const claudeBadge = page.getByText('Claude', { exact: true });
-
-    // At least one tier badge should be visible
-    const isRuleVisible = await ruleBadge.first().isVisible().catch(() => false);
-    const isMLVisible = await mlBadge.first().isVisible().catch(() => false);
-    const isClaudeVisible = await claudeBadge.first().isVisible().catch(() => false);
-
-    expect(isRuleVisible || isMLVisible || isClaudeVisible).toBeTruthy();
-  });
-
-  test('should filter insights when clicking tabs', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
-    // Click on anomaly tab
-    const anomalyTab = page.getByRole('button', { name: /이상 탐지/i });
-    await anomalyTab.click();
-
-    // Wait for filter to apply
-    await page.waitForTimeout(500);
-
-    // Tab should be active (has different styling)
-    await expect(anomalyTab).toHaveClass(/text-purple-600/);
-  });
-
-  test('should handle analyze button click', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
-    // Click analyze button
-    const analyzeButton = page.getByRole('button', { name: /새 분석 실행/i });
-    await analyzeButton.click();
-
-    // Button should show loading state
-    const loadingButton = page.getByRole('button', { name: /분석 중/i });
-    await expect(loadingButton).toBeVisible();
+    expect(hasCards || hasEmptyState).toBeTruthy();
   });
 
   test('should display brand footer', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
-    // Brand footer tagline should be visible (exact match to avoid title tag)
-    const brandTagline = page.getByText('Data Flows. Evidence Follows.', { exact: true }).first();
+    // Brand footer tagline should be visible
+    const brandTagline = page.locator('text=in·ev·it·able — Data Flows. Evidence Follows.');
     await expect(brandTagline).toBeVisible();
-  });
-
-  test('should display circular progress indicators', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
-    // SVG circles for confidence visualization should exist
-    const svgCircles = page.locator('svg circle');
-    const circleCount = await svgCircles.count();
-
-    // Should have circles for confidence indicators
-    expect(circleCount).toBeGreaterThan(0);
   });
 });

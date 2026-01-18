@@ -68,8 +68,12 @@ function buildCSP(nonce: string): string {
     'form-action': ["'self'"],
     'base-uri': ["'self'"],
     'object-src': ["'none'"],
-    'upgrade-insecure-requests': [],
   };
+
+  // Production-only directives
+  if (isProduction) {
+    directives['upgrade-insecure-requests'] = [];
+  }
 
   // In development, allow eval for hot reload
   if (!isProduction) {
@@ -162,6 +166,25 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+
+  // E2E Test Bypass (Development Only)
+  // Allows E2E tests to access protected routes without authentication
+  const e2eTestToken = request.headers.get('x-e2e-test-token');
+  const isE2ETest =
+    e2eTestToken === process.env.E2E_TEST_SECRET &&
+    process.env.NODE_ENV !== 'production';
+
+  if (isE2ETest) {
+    // Skip authentication for E2E tests
+    // Add security headers and continue
+    response.headers.set('x-request-id', requestId);
+    response.headers.set('x-csp-nonce', nonce);
+    const securityHeaders = getSecurityHeaders(nonce);
+    for (const [key, value] of Object.entries(securityHeaders)) {
+      response.headers.set(key, value);
+    }
+    return response;
+  }
 
   // Route protection logic
   if (matchesRoute(path, PROTECTED_ROUTES)) {
