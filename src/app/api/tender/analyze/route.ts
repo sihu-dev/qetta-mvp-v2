@@ -2,26 +2,30 @@
  * Tender Analyze API Route
  * /api/tender/analyze
  *
- * Analyze bids for company fit and recommendations
+ * Analyze bids for company fit, competition, and recommendations
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
-import { analyzeBid, type AnalyzeOptions } from '@/lib/tender/analyzers/bid-analyzer';
+import {
+  analyzeBid,
+  calculateFitScore,
+  analyzeCompetitors,
+  getRecommendationText,
+  type AnalyzeOptions,
+  type CompanyProfile,
+} from '@/lib/tender/analyzers';
 import type { Bid } from '@/lib/tender/types';
 import { metrics } from '@/lib/metrics';
+import { logger } from '@/lib/logging';
 
 export interface AnalyzeRequest {
   bidId: string;
   orgId: string;
-  companyProfile?: {
-    business_number?: string;
-    certifications: string[];
-    experience_years: number;
-    past_wins: number;
-    revenue: number;
-  };
+  companyProfile?: CompanyProfile;
   options?: Partial<AnalyzeOptions>;
+  includeCompetitors?: boolean;
+  includeFitScore?: boolean;
 }
 
 /**
@@ -33,7 +37,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: AnalyzeRequest = await request.json();
-    const { bidId, orgId, companyProfile, options } = body;
+    const {
+      bidId,
+      orgId,
+      companyProfile,
+      options,
+      includeCompetitors = true,
+      includeFitScore = true,
+    } = body;
 
     if (!bidId || !orgId) {
       statusCode = 400;
@@ -59,21 +70,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Default company profile if not provided
-    const profile = companyProfile || {
+    const profile: CompanyProfile = companyProfile || {
       business_number: '123-45-67890',
-      certifications: ['ISO9001', 'ISO27001'],
+      company_name: 'Demo Company',
+      certifications: ['ISO9001', 'ISO27001', '중소기업'],
       experience_years: 5,
       past_wins: 10,
       revenue: 5000000000, // 50억
+      employee_count: 30,
+      specializations: ['스마트팩토리', 'IoT', '데이터분석'],
     };
 
     // Update bid status to analyzing
-    await supabase
-      .from('bids')
-      .update({ status: 'analyzing' })
-      .eq('id', bidId);
+    await supabase.from('bids').update({ status: 'analyzing' }).eq('id', bidId);
 
-    // Analyze the bid
+    // Convert to typed Bid
     const typedBid: Bid = {
       id: bid.id,
       org_id: bid.org_id,
@@ -91,11 +102,25 @@ export async function POST(request: NextRequest) {
       updated_at: bid.updated_at,
     };
 
+    // Run analysis
+    logger.info('Starting bid analysis', { bidId, orgId });
+
     const analysis = await analyzeBid(typedBid, profile, {
       checkQualifications: options?.checkQualifications ?? true,
       estimateCompetition: options?.estimateCompetition ?? true,
       generateRecommendations: options?.generateRecommendations ?? true,
+      extractDocuments: options?.extractDocuments ?? true,
     });
+
+    // Calculate fit score
+    const fitScore = includeFitScore
+      ? calculateFitScore(typedBid, profile, analysis)
+      : null;
+
+    // Analyze competitors
+    const competitorAnalysis = includeCompetitors
+      ? await analyzeCompetitors(typedBid)
+      : null;
 
     // Store the analysis
     const { data: savedAnalysis, error: saveError } = await supabase
@@ -115,38 +140,71 @@ export async function POST(request: NextRequest) {
     if (saveError) throw saveError;
 
     // Update bid with fit score and status
+    const finalFitScore = fitScore?.overall ?? analysis.win_probability;
     await supabase
       .from('bids')
       .update({
-        fit_score: analysis.win_probability,
+        fit_score: finalFitScore,
         status: 'analyzed',
       })
       .eq('id', bidId);
 
+    logger.info('Bid analysis completed', {
+      bidId,
+      fitScore: finalFitScore,
+      competitionLevel: analysis.competition_level,
+    });
+
     return NextResponse.json({
       success: true,
       analysis: savedAnalysis,
+      fitScore: fitScore
+        ? {
+            overall: fitScore.overall,
+            grade: fitScore.grade,
+            recommendation: fitScore.recommendation,
+            recommendationText: getRecommendationText(fitScore.recommendation),
+            breakdown: fitScore.breakdown,
+          }
+        : null,
+      competitors: competitorAnalysis
+        ? {
+            level: competitorAnalysis.competition_level,
+            estimatedCount: competitorAnalysis.estimated_competitors,
+            profiles: competitorAnalysis.competitor_profiles,
+            insights: competitorAnalysis.market_insights,
+            strategies: competitorAnalysis.strategy_recommendations,
+          }
+        : null,
       summary: {
-        fitScore: analysis.win_probability,
+        fitScore: finalFitScore,
+        fitGrade: fitScore?.grade || null,
         competitionLevel: analysis.competition_level,
         qualificationsMet: analysis.qualifications_met.filter((q) => q.met).length,
         qualificationsTotal: analysis.qualifications_met.length,
+        requiredDocuments: analysis.required_documents.length,
         recommendationsCount: analysis.recommendations.length,
+        estimatedCompetitors: competitorAnalysis?.estimated_competitors || null,
       },
       metadata: {
         executionTime: Date.now() - startTime,
+        analyzedAt: new Date().toISOString(),
       },
     });
-
   } catch (error) {
-    console.error('Tender Analyze Error:', error);
+    logger.error('Tender Analyze Error', { error });
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   } finally {
-    metrics.httpRequest('POST', '/api/tender/analyze', statusCode, (Date.now() - startTime) / 1000);
+    metrics.httpRequest(
+      'POST',
+      '/api/tender/analyze',
+      statusCode,
+      (Date.now() - startTime) / 1000
+    );
   }
 }
 
@@ -161,6 +219,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const bidId = searchParams.get('bidId');
     const orgId = searchParams.get('orgId');
+    const limit = parseInt(searchParams.get('limit') || '20');
 
     if (!bidId && !orgId) {
       statusCode = 400;
@@ -173,12 +232,14 @@ export async function GET(request: NextRequest) {
     const supabase = createServerClient();
     let query = supabase
       .from('bid_analyses')
-      .select('*, bids(*)');
+      .select('*, bids(*)')
+      .order('analyzed_at', { ascending: false })
+      .limit(limit);
 
     if (bidId) query = query.eq('bid_id', bidId);
     if (orgId) query = query.eq('org_id', orgId);
 
-    const { data, error } = await query.order('analyzed_at', { ascending: false });
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -187,15 +248,19 @@ export async function GET(request: NextRequest) {
       analyses: data || [],
       count: data?.length || 0,
     });
-
   } catch (error) {
-    console.error('Tender Analysis List Error:', error);
+    logger.error('Tender Analysis List Error', { error });
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   } finally {
-    metrics.httpRequest('GET', '/api/tender/analyze', statusCode, (Date.now() - startTime) / 1000);
+    metrics.httpRequest(
+      'GET',
+      '/api/tender/analyze',
+      statusCode,
+      (Date.now() - startTime) / 1000
+    );
   }
 }

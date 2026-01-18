@@ -132,7 +132,7 @@ pnpm build           # Next.js
 |-------|--------|-------------|
 | 1 | ✅ | 기반 구축 (패키지, 디렉토리, DB) |
 | 2 | ✅ | 수집기 (G2B, UNGM, SAM, KZ) |
-| 3 | ⏳ | 분석기 (BidAnalyzer, FitScorer) |
+| 3 | ✅ | 분석기 (BidAnalyzer, FitScorer, CompetitorAnalyzer) |
 | 4 | ⏳ | 문서 생성 통합 |
 | 5 | ⏳ | E2E 테스트 |
 | 11 | ✅ | Production Hardening |
