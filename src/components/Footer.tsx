@@ -12,7 +12,7 @@ export function Footer() {
         <div className="py-16">
           <div className="flex flex-col items-center">
             <Logo className="mx-auto h-10 w-auto" />
-            <p className="mt-2 text-sm text-purple-600 font-medium">
+            <p className="mt-2 text-sm text-blue-600 font-medium">
               {BRAND.slogan}
             </p>
             <p className="text-xs text-slate-500">{BRAND.tagline}</p>
@@ -30,7 +30,7 @@ export function Footer() {
           <div className="flex gap-x-6">
             <Link href="#" className="group" aria-label="Qetta on X">
               <svg
-                className="h-6 w-6 fill-slate-500 group-hover:fill-purple-600"
+                className="h-6 w-6 fill-slate-500 group-hover:fill-blue-600"
                 aria-hidden="true"
                 viewBox="0 0 24 24"
               >
@@ -39,7 +39,7 @@ export function Footer() {
             </Link>
             <Link href="#" className="group" aria-label="Qetta on GitHub">
               <svg
-                className="h-6 w-6 fill-slate-500 group-hover:fill-purple-600"
+                className="h-6 w-6 fill-slate-500 group-hover:fill-blue-600"
                 aria-hidden="true"
                 viewBox="0 0 24 24"
               >

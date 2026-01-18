@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { isDeveloper, isAdmin } from '@/components/layout/RoleGate';
 
 interface NavItem {
   name: string;
   href: string;
   icon: React.ReactNode;
+  roles?: ('user' | 'developer' | 'admin')[];
 }
 
 const navigation: NavItem[] = [
@@ -46,6 +49,27 @@ const navigation: NavItem[] = [
       </svg>
     ),
   },
+  {
+    name: '개발자 도구',
+    href: '/dashboard/dev',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+      </svg>
+    ),
+    roles: ['developer', 'admin'],
+  },
+  {
+    name: '관리자',
+    href: '/dashboard/admin',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+    roles: ['admin'],
+  },
 ];
 
 export default function DashboardLayout({
@@ -54,6 +78,16 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const userRole = user?.profile?.system_role || 'user';
+
+  // Filter navigation items based on user role
+  const filteredNavigation = navigation.filter((item) => {
+    if (!item.roles) return true; // Show to all if no roles specified
+    if (item.roles.includes('developer') && isDeveloper(userRole)) return true;
+    if (item.roles.includes('admin') && isAdmin(userRole)) return true;
+    return item.roles.includes(userRole);
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,7 +97,7 @@ export default function DashboardLayout({
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center">
               <Link href="/" className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-purple-600">Qetta</span>
+                <span className="text-2xl font-bold text-blue-600">Qetta</span>
                 <span className="text-xs text-gray-500">in·ev·it·able</span>
               </Link>
             </div>
@@ -74,7 +108,7 @@ export default function DashboardLayout({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
               </button>
-              <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
                 <span className="text-white text-sm font-medium">Q</span>
               </div>
             </div>
@@ -86,7 +120,7 @@ export default function DashboardLayout({
         {/* Sidebar */}
         <aside className="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto">
           <nav className="p-4 space-y-1">
-            {navigation.map((item) => {
+            {filteredNavigation.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
@@ -94,11 +128,11 @@ export default function DashboardLayout({
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-purple-50 text-purple-700'
+                      ? 'bg-blue-50 text-blue-700'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <span className={isActive ? 'text-purple-600' : 'text-gray-400'}>
+                  <span className={isActive ? 'text-blue-600' : 'text-gray-400'}>
                     {item.icon}
                   </span>
                   {item.name}
@@ -109,7 +143,7 @@ export default function DashboardLayout({
 
           {/* Bottom Section */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-            <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg p-4 text-white">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-4 text-white">
               <p className="text-sm font-medium">3-Tier Intelligence</p>
               <p className="text-xs opacity-80 mt-1">95% Rule · 4% ML · 1% Claude</p>
             </div>

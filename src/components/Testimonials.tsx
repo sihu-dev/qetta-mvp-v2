@@ -1,6 +1,7 @@
 import Image from 'next/image'
 
 import { Container } from '@/components/Container'
+import { BRAND } from '@/lib/brand'
 import avatarImage1 from '@/images/avatars/avatar-1.png'
 import avatarImage2 from '@/images/avatars/avatar-2.png'
 import avatarImage3 from '@/images/avatars/avatar-3.png'
@@ -11,19 +12,19 @@ const testimonials = [
   [
     {
       content:
-        'TaxPal is so easy to use I can’t help but wonder if it’s really doing the things the government expects me to do.',
+        'OTT칩 설치 후 설비 데이터가 자동으로 수집되니까 월말 보고서 작성 시간이 80% 줄었습니다. 정부 제출 서류도 버튼 하나로 끝나요.',
       author: {
-        name: 'Sheryl Berge',
-        role: 'CEO at Lynch LLC',
+        name: '김정훈',
+        role: '대표, 한진정밀 (CNC 가공업)',
         image: avatarImage1,
       },
     },
     {
       content:
-        'I’m trying to get a hold of someone in support, I’m in a lot of trouble right now and they are saying it has something to do with my books. Please get back to me right away.',
+        '스마트공장 기초 단계 인증 받을 때 증빙 준비가 가장 힘들었는데, Qetta 덕분에 다음 고도화 단계는 훨씬 수월하게 준비하고 있습니다.',
       author: {
-        name: 'Amy Hahn',
-        role: 'Director at Velocity Industries',
+        name: '이수진',
+        role: '공장장, 서울금형',
         image: avatarImage4,
       },
     },
@@ -31,19 +32,19 @@ const testimonials = [
   [
     {
       content:
-        'The best part about TaxPal is every time I pay my employees, my bank balance doesn’t go down like it used to. Looking forward to spending this extra cash when I figure out why my card is being declined.',
+        'AI 예지보전 덕분에 CNC 스핀들 교체 시기를 72시간 전에 알 수 있게 됐어요. 갑작스런 라인 정지가 확 줄었습니다.',
       author: {
-        name: 'Leland Kiehn',
-        role: 'Founder of Kiehn and Sons',
+        name: '박민수',
+        role: '생산팀장, 동아테크',
         image: avatarImage5,
       },
     },
     {
       content:
-        'There are so many things I had to do with my old software that I just don’t do at all with TaxPal. Suspicious but I can’t say I don’t love it.',
+        'MES 도입하려면 수천만원 들었을 텐데, 50만원짜리 OTT칩으로 핵심 기능을 다 쓰고 있습니다. 중소기업에 딱입니다.',
       author: {
-        name: 'Erin Powlowski',
-        role: 'COO at Armstrong Inc',
+        name: '최영희',
+        role: 'CEO, 영진기계',
         image: avatarImage2,
       },
     },
@@ -51,19 +52,19 @@ const testimonials = [
   [
     {
       content:
-        'I used to have to remit tax to the EU and with TaxPal I somehow don’t have to do that anymore. Nervous to travel there now though.',
+        '입찰 공고 분석 기능이 정말 좋아요. 우리 회사에 맞는 공고만 골라서 보여주니까 제안서 작성에 집중할 수 있습니다.',
       author: {
-        name: 'Peter Renolds',
-        role: 'Founder of West Inc',
+        name: '정태영',
+        role: '영업본부장, 미래시스템즈',
         image: avatarImage3,
       },
     },
     {
       content:
-        'This is the fourth email I’ve sent to your support team. I am literally being held in jail for tax fraud. Please answer your damn emails, this is important.',
+        '증빙 패키지의 변조 탐지 기능 덕분에 감사 때 서류 진위 문제로 고생한 적이 없습니다. 정부 담당자분도 신뢰하시더라고요.',
       author: {
-        name: 'Amy Hahn',
-        role: 'Director at Velocity Industries',
+        name: '한지민',
+        role: '경영지원팀장, 코리아로봇',
         image: avatarImage4,
       },
     },
@@ -82,18 +83,18 @@ export function Testimonials() {
   return (
     <section
       id="testimonials"
-      aria-label="What our customers are saying"
+      aria-label="고객 후기"
       className="bg-slate-50 py-20 sm:py-32"
     >
       <Container>
         <div className="mx-auto max-w-2xl md:text-center">
           <h2 className="font-display text-3xl tracking-tight text-slate-900 sm:text-4xl">
-            Loved by businesses worldwide.
+            제조 현장에서 검증된 솔루션
           </h2>
           <p className="mt-4 text-lg tracking-tight text-slate-700">
-            Our software is so simple that people can’t help but fall in love
-            with it. Simplicity is easy when you just skip tons of
-            mission-critical features.
+            {BRAND.cvp.cost}. {BRAND.cvp.downtime}. {BRAND.cvp.roi}.
+            <br />
+            실제 고객들의 이야기를 들어보세요.
           </p>
         </div>
         <ul
