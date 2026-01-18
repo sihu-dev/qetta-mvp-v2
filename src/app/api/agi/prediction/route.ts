@@ -13,6 +13,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import type { PredictionTarget, Prediction, Anomaly, AnomalyType } from '@/lib/agi/types';
 import { metrics } from '@/lib/metrics';
+import { parseJson } from '@/lib/api';
+import { logger } from '@/lib/logging';
 
 export interface PredictionRequest {
   orgId: string;
@@ -41,8 +43,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<Predictio
   let statusCode = 200;
 
   try {
-    const body: PredictionRequest = await request.json();
-    const { orgId, target, assetId, horizon = '7d', includeAnomalies = true } = body;
+    const parsed = await parseJson<PredictionRequest>(request);
+    if (!parsed.success) {
+      return parsed.response as NextResponse<PredictionResponse>;
+    }
+    const { orgId, target, assetId, horizon = '7d', includeAnomalies = true } = parsed.data;
 
     if (!orgId || !target) {
       statusCode = 400;
@@ -111,7 +116,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Predictio
     });
 
   } catch (error) {
-    console.error('Prediction Error:', error);
+    logger.error('Prediction Error', error);
     statusCode = 500;
     return NextResponse.json(
       {

@@ -6,6 +6,7 @@
 
 import axios, { AxiosInstance } from 'axios';
 import type { GovProgram } from '../types';
+import { logger } from '@/lib/logging';
 
 // =============================================================================
 // 타입 정의
@@ -113,8 +114,7 @@ export class KStartupClient {
       const programs = Array.isArray(items) ? items : [items];
       return programs.filter(Boolean).map(this.transformToGovProgram);
     } catch (error) {
-      console.error('[K-Startup] Search programs error:', error);
-      // API 실패 시 Mock 데이터 반환
+      logger.error('K-Startup search programs error', error);
       return this.getMockPrograms();
     }
   }
@@ -356,7 +356,7 @@ export function getKStartupClient(): KStartupClient {
   if (!instance) {
     const apiKey = process.env.KSTARTUP_API_KEY;
     if (!apiKey) {
-      console.warn('[K-Startup] API key not configured, using mock client');
+      logger.warn('K-Startup API key not configured, using mock client');
       return new KStartupClient({ apiKey: 'mock-key' });
     }
     instance = new KStartupClient({ apiKey });

@@ -6,16 +6,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyzeRFP } from '@/lib/bizsupport/engines/deep-rfp-analyzer';
 import type { AnalyzeRequest, ClientType } from '@/lib/bizsupport/types';
+import { parseJson } from '@/lib/api';
+import { logger } from '@/lib/logging';
+
+interface AnalyzeRequestBody {
+  rfpText?: string;
+  rfpUrl?: string;
+  clientType?: ClientType;
+  options?: AnalyzeRequest['options'];
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { rfpText, rfpUrl, clientType, options } = body as {
-      rfpText?: string;
-      rfpUrl?: string;
-      clientType?: ClientType;
-      options?: AnalyzeRequest['options'];
-    };
+    const parsed = await parseJson<AnalyzeRequestBody>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+    const { rfpText, rfpUrl, clientType, options } = parsed.data;
 
     // Validation
     if (!rfpText && !rfpUrl) {
@@ -64,7 +71,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[API] RFP Analyze error:', error);
+    logger.error('RFP Analyze error', error);
     return NextResponse.json(
       {
         success: false,

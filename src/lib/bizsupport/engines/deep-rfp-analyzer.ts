@@ -17,12 +17,12 @@ import type {
   KeywordItem,
   SimilarDocument,
   HiddenNeed,
-  HiddenNeedCategory,
   ProposalStrategy,
   RFPAnalysisResult,
   OrganizationType,
   AnalyzeRequest,
 } from '../types';
+import { logger } from '@/lib/logging';
 
 // =============================================================================
 // Layer 1: 메타데이터 추출 (규칙 기반)
@@ -55,7 +55,7 @@ export async function extractMetadata(rfpText: string): Promise<RFPMetadata> {
   // 기관명 추출
   const organizationName = extractOrganizationName(rfpText);
 
-  console.log(`[Layer 1] Metadata extraction completed in ${Date.now() - startTime}ms`);
+  logger.debug('Layer 1 metadata extraction completed', { duration: Date.now() - startTime });
 
   return {
     title,
@@ -304,7 +304,7 @@ export async function extractKeywords(rfpText: string): Promise<ExtractedKeyword
     }
   }
 
-  console.log(`[Layer 2a] Keyword extraction completed in ${Date.now() - startTime}ms`);
+  logger.debug('Layer 2a keyword extraction completed', { duration: Date.now() - startTime });
 
   return {
     primary: primary.slice(0, 10),
@@ -320,8 +320,9 @@ export async function extractKeywords(rfpText: string): Promise<ExtractedKeyword
 
 export async function semanticMatch(
   keywords: ExtractedKeywords,
-  _maxResults: number = 5
+  maxResults: number = 5
 ): Promise<SimilarDocument[]> {
+  void maxResults; // TODO: Implement pgvector search
   const startTime = Date.now();
 
   // TODO: Supabase pgvector 연동
@@ -344,7 +345,7 @@ export async function semanticMatch(
     },
   ];
 
-  console.log(`[Layer 2b] Semantic match completed in ${Date.now() - startTime}ms`);
+  logger.debug('Layer 2b semantic match completed', { duration: Date.now() - startTime });
 
   return mockDocs;
 }
@@ -397,7 +398,7 @@ export async function inferHiddenNeeds(
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.warn('[Layer 3] ANTHROPIC_API_KEY not set, returning mock data');
+    logger.warn('ANTHROPIC_API_KEY not set, returning mock data');
     return getMockHiddenNeeds(metadata);
   }
 
@@ -440,12 +441,12 @@ ${metadata.eligibility.join('\n')}
       const jsonMatch = content.text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        console.log(`[Layer 3] Hidden needs inference completed in ${Date.now() - startTime}ms`);
+        logger.debug('Layer 3 hidden needs inference completed', { duration: Date.now() - startTime });
         return parsed.hiddenNeeds || [];
       }
     }
   } catch (error) {
-    console.error('[Layer 3] Claude API error:', error);
+    logger.error('Layer 3 Claude API error', error);
   }
 
   return getMockHiddenNeeds(metadata);
@@ -538,7 +539,7 @@ export async function formulateStrategy(
   differentiators.push('MES 대비 1/100 비용');
   differentiators.push('설치 당일 데이터 수집 시작');
 
-  console.log(`[Layer 4] Strategy formulation completed in ${Date.now() - startTime}ms`);
+  logger.debug('Layer 4 strategy formulation completed', { duration: Date.now() - startTime });
 
   // 핵심 메시지 생성
   const coreMessage = keyMessages.length > 0
@@ -616,7 +617,7 @@ export async function analyzeRFP(request: AnalyzeRequest): Promise<RFPAnalysisRe
 
   timing.total = Date.now() - startTime;
 
-  console.log(`[RFP Analyzer] Total analysis completed in ${timing.total}ms`);
+  logger.info('RFP analysis completed', { timing });
 
   return {
     id: `analysis-${Date.now()}`,

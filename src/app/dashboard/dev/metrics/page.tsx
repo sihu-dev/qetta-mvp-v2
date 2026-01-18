@@ -115,7 +115,7 @@ export default function MetricsPage() {
     }
   };
 
-  const SimpleChart = ({ data, color, label }: { data: TimeSeriesPoint[]; color: string; label: string }) => {
+  const SimpleChart = ({ data, color }: { data: TimeSeriesPoint[]; color: string }) => {
     if (data.length < 2) return <div className="h-32 flex items-center justify-center text-gray-400">데이터 로딩 중...</div>;
 
     const max = Math.max(...data.map((d) => d.value));
@@ -237,19 +237,19 @@ export default function MetricsPage() {
           {/* CPU Chart */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="font-semibold text-gray-900 mb-4">CPU 사용률</h3>
-            <SimpleChart data={cpuHistory} color="blue" label="CPU" />
+            <SimpleChart data={cpuHistory} color="blue" />
           </div>
 
           {/* Memory Chart */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="font-semibold text-gray-900 mb-4">메모리 사용률</h3>
-            <SimpleChart data={memoryHistory} color="green" label="Memory" />
+            <SimpleChart data={memoryHistory} color="green" />
           </div>
 
           {/* Requests Chart */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="font-semibold text-gray-900 mb-4">요청 수 (분당)</h3>
-            <SimpleChart data={requestHistory} color="yellow" label="Requests" />
+            <SimpleChart data={requestHistory} color="yellow" />
           </div>
         </div>
 

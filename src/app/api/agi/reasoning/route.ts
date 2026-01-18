@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import type { ReasoningMode, ReasoningChain } from '@/lib/agi/types';
 import { metrics } from '@/lib/metrics';
+import { parseJson } from '@/lib/api';
+import { logger } from '@/lib/logging';
 
 export interface ReasoningRequest {
   orgId: string;
@@ -32,8 +34,11 @@ export async function POST(request: NextRequest) {
   let statusCode = 200;
 
   try {
-    const body: ReasoningRequest = await request.json();
-    const { orgId, mode, premises, context } = body;
+    const parsed = await parseJson<ReasoningRequest>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+    const { orgId, mode, premises, context } = parsed.data;
 
     if (!orgId || !mode || !premises?.length) {
       statusCode = 400;
@@ -85,7 +90,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Reasoning Error:', error);
+    logger.error('Reasoning Error', error);
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

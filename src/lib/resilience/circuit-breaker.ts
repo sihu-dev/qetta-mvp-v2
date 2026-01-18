@@ -4,6 +4,7 @@
  */
 
 import { metrics } from '@/lib/metrics';
+import { logger } from '@/lib/logging';
 
 export type CircuitState = 'closed' | 'open' | 'half-open';
 
@@ -121,7 +122,8 @@ export class CircuitBreaker {
     }
   }
 
-  private onFailure(_error: unknown): void {
+  private onFailure(error: unknown): void {
+    void error;
     this.lastFailure = new Date();
     this.totalFailures++;
     this.failures++;
@@ -151,7 +153,7 @@ export class CircuitBreaker {
       this.successes = 0;
     }
 
-    console.log(
+    logger.debug(
       `[CircuitBreaker:${this.options.name}] State transition: ${oldState} -> ${newState}`
     );
   }

@@ -5,17 +5,24 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { matchStrengths, getRecommendationLabel } from '@/lib/bizsupport/engines/needs-strength-matcher';
-import type { MatchRequest, RFPAnalysisResult, ClientType } from '@/lib/bizsupport/types';
+import type { RFPAnalysisResult, ClientType } from '@/lib/bizsupport/types';
+import { parseJson } from '@/lib/api';
+import { logger } from '@/lib/logging';
+
+interface MatchRequestBody {
+  rfpId: string;
+  analysisResult: RFPAnalysisResult;
+  clientType: ClientType;
+  customStrengths?: string[];
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { rfpId, analysisResult, clientType, customStrengths } = body as {
-      rfpId: string;
-      analysisResult: RFPAnalysisResult;
-      clientType: ClientType;
-      customStrengths?: string[];
-    };
+    const parsed = await parseJson<MatchRequestBody>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+    const { rfpId, analysisResult, clientType, customStrengths } = parsed.data;
 
     // Validation
     if (!analysisResult) {
@@ -58,7 +65,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[API] Match error:', error);
+    logger.error('Match error', error);
     return NextResponse.json(
       {
         success: false,

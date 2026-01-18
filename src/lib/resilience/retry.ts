@@ -3,6 +3,8 @@
  * Automatically retries failed operations with increasing delays
  */
 
+import { logger } from '@/lib/logging';
+
 export interface RetryOptions {
   /** Maximum number of retry attempts */
   maxRetries: number;
@@ -128,9 +130,9 @@ export async function retry<T>(
       // Callback before retry
       opts.onRetry?.(attempt, error, delay);
 
-      console.log(
-        `[Retry] Attempt ${attempt}/${opts.maxRetries} failed, retrying in ${delay}ms:`,
-        error instanceof Error ? error.message : error
+      logger.debug(
+        `[Retry] Attempt ${attempt}/${opts.maxRetries} failed, retrying in ${delay}ms`,
+        { error: error instanceof Error ? error.message : String(error) }
       );
 
       await sleep(delay);
@@ -156,8 +158,9 @@ export function withRetry<TArgs extends unknown[], TReturn>(
 export function Retryable(options: Partial<RetryOptions> = {}) {
   return function <T extends (...args: unknown[]) => Promise<unknown>>(
     target: T,
-    _context: ClassMethodDecoratorContext
+    context: ClassMethodDecoratorContext
   ): T {
+    void context;
     return function (this: unknown, ...args: unknown[]) {
       return retry(() => target.apply(this, args) as Promise<unknown>, options);
     } as T;

@@ -26,6 +26,8 @@ import * as path from 'path';
 import * as os from 'os';
 import { metrics } from '@/lib/metrics';
 import { logger } from '@/lib/logging';
+import { parseJson, parseLimit } from '@/lib/api';
+import { DEMO_COMPANY_PROFILE } from '@/lib/config/constants';
 
 export interface GenerateRequest {
   bidId?: string;
@@ -72,7 +74,10 @@ export async function POST(request: NextRequest) {
   let statusCode = 200;
 
   try {
-    const body: GenerateRequest = await request.json();
+    const parsed = await parseJson<GenerateRequest>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
     const {
       bidId,
       orgId,
@@ -83,7 +88,7 @@ export async function POST(request: NextRequest) {
       docType,
       format,
       data,
-    } = body;
+    } = parsed.data;
 
     if (!orgId) {
       statusCode = 400;
@@ -120,16 +125,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Default company profile
-      const profile: CompanyProfile = companyProfile || {
-        business_number: '123-45-67890',
-        company_name: 'Demo Company',
-        certifications: ['ISO9001', 'ISO27001', '중소기업'],
-        experience_years: 5,
-        past_wins: 10,
-        revenue: 5000000000,
-        employee_count: 30,
-        specializations: ['스마트팩토리', 'IoT', '데이터분석'],
-      };
+      const profile: CompanyProfile = companyProfile || DEMO_COMPANY_PROFILE;
 
       // Convert to typed Bid
       const typedBid: Bid = {
@@ -390,7 +386,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Tender Generate Error:', error);
+    logger.error('Tender Generate Error', error);
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
@@ -413,7 +409,7 @@ export async function GET(request: NextRequest) {
     const orgId = searchParams.get('orgId');
     const bidId = searchParams.get('bidId');
     const docType = searchParams.get('docType') as DocumentType | null;
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseLimit(searchParams.get('limit'));
 
     if (!orgId) {
       statusCode = 400;
@@ -442,7 +438,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Document List Error:', error);
+    logger.error('Document List Error', error);
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

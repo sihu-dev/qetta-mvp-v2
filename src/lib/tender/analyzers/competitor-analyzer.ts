@@ -290,8 +290,9 @@ function generateMarketInsights(bid: Bid, level: CompetitionLevel): MarketInsigh
 function generateStrategyRecommendations(
   bid: Bid,
   level: CompetitionLevel,
-  _competitorCount: number
+  competitorCount: number
 ): StrategyRecommendation[] {
+  void competitorCount;
   const recommendations: StrategyRecommendation[] = [];
   const title = bid.title.toLowerCase();
 

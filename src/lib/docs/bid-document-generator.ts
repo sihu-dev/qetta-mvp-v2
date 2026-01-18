@@ -8,12 +8,8 @@ import { XlsxBuilder, type QuotationData, type QuotationItem } from './xlsx-buil
 import { PptxBuilder, type ProposalPptData, type PptSection } from './pptx-builder';
 import type { BuildResult } from './index';
 import type { Bid, BidAnalysis, Recommendation } from '../tender/types';
-import type { FitScore, FitScoreBreakdown } from '../tender/analyzers/fit-scorer';
-import type {
-  CompetitorAnalysis,
-  MarketInsight,
-  StrategyRecommendation,
-} from '../tender/analyzers/competitor-analyzer';
+import type { FitScore } from '../tender/analyzers/fit-scorer';
+import type { CompetitorAnalysis } from '../tender/analyzers/competitor-analyzer';
 import type { CompanyProfile } from '../tender/analyzers/bid-analyzer';
 
 export interface BidDocumentInput {
@@ -557,7 +553,7 @@ function generateQuotationItems(bid: Bid): QuotationItem[] {
 }
 
 function generateConclusion(input: BidDocumentInput): string {
-  const { bid, fitScore, analysis, companyProfile } = input;
+  const { bid, fitScore, companyProfile } = input;
 
   const lines = [
     `${companyProfile.company_name || '당사'}는 본 사업 "${bid.title}"에 최적화된 역량을 보유하고 있습니다.`,

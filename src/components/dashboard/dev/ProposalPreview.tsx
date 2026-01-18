@@ -6,7 +6,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { GeneratedProposal, ProposalSection } from '@/lib/bizsupport/types/proposal-sections';
+import type { GeneratedProposal } from '@/lib/bizsupport/types/proposal-sections';
 
 // =============================================================================
 // 타입 정의

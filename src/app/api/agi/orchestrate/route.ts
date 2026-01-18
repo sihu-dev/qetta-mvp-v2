@@ -11,6 +11,8 @@ import { createServerClient } from '@/lib/supabase';
 import { techCombiner } from '@/lib/agi/ultra-thinking';
 import type { BusinessRequirement, Tier } from '@/lib/agi/types';
 import { metrics } from '@/lib/metrics';
+import { parseJson } from '@/lib/api';
+import { logger } from '@/lib/logging';
 
 export interface OrchestrateRequest {
   type: 'recommend_tech' | 'analyze_events' | 'search_memory' | 'predict';
@@ -34,8 +36,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<Orchestra
   let statusCode = 200;
 
   try {
-    const body: OrchestrateRequest = await request.json();
-    const { type, orgId, payload } = body;
+    const parsed = await parseJson<OrchestrateRequest>(request);
+    if (!parsed.success) {
+      return parsed.response as NextResponse<OrchestrateResponse>;
+    }
+    const { type, orgId, payload } = parsed.data;
 
     if (!type || !orgId) {
       statusCode = 400;
@@ -167,7 +172,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Orchestra
     });
 
   } catch (error) {
-    console.error('AGI Orchestrate Error:', error);
+    logger.error('AGI Orchestrate Error', error);
     statusCode = 500;
     return NextResponse.json(
       {

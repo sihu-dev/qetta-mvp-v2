@@ -19,6 +19,7 @@ import {
 } from '@/lib/tender/collectors';
 import { metrics } from '@/lib/metrics';
 import { logger } from '@/lib/logging';
+import { parseJson, parseLimit } from '@/lib/api';
 
 export interface CollectRequest {
   orgId: string;
@@ -42,8 +43,11 @@ export async function POST(request: NextRequest) {
   let statusCode = 200;
 
   try {
-    const body: CollectRequest = await request.json();
-    const { orgId, source, filters, limit = 50, simulate = false } = body;
+    const parsed = await parseJson<CollectRequest>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+    const { orgId, source, filters, limit = 50, simulate = false } = parsed.data;
 
     if (!orgId || !source) {
       statusCode = 400;
@@ -282,7 +286,7 @@ export async function GET(request: NextRequest) {
     const orgId = searchParams.get('orgId');
     const source = searchParams.get('source') as BidSource | null;
     const status = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = parseLimit(searchParams.get('limit'), { defaultLimit: 50 });
 
     if (!orgId) {
       statusCode = 400;

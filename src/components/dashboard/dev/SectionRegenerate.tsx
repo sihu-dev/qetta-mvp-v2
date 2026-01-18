@@ -23,7 +23,6 @@ interface SectionRegenerateProps {
 // =============================================================================
 
 export function SectionRegenerate({
-  sectionType,
   onRegenerate,
   isRegenerating = false,
 }: SectionRegenerateProps) {

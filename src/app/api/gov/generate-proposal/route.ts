@@ -12,25 +12,31 @@ import type {
   ProposalSectionType,
 } from '@/lib/bizsupport/types';
 import { QETTA_COMPANY_PROFILE } from '@/lib/bizsupport/data/gov-programs-2026';
+import { parseJson } from '@/lib/api';
+import { logger } from '@/lib/logging';
+
+interface GenerateProposalRequestBody {
+  rfpId: string;
+  analysisResult: RFPAnalysisResult;
+  matchResult: MatchResult;
+  companyProfile?: CompanyProfile;
+  sections?: ProposalSectionType[];
+  format?: 'docx' | 'pdf' | 'both';
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const parsed = await parseJson<GenerateProposalRequestBody>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
     const {
       rfpId,
       analysisResult,
       matchResult,
       companyProfile,
       sections,
-      format,
-    } = body as {
-      rfpId: string;
-      analysisResult: RFPAnalysisResult;
-      matchResult: MatchResult;
-      companyProfile?: CompanyProfile;
-      sections?: ProposalSectionType[];
-      format?: 'docx' | 'pdf' | 'both';
-    };
+    } = parsed.data;
 
     // Validation
     if (!analysisResult || !matchResult) {
@@ -83,7 +89,7 @@ export async function POST(request: NextRequest) {
       processingTime,
     });
   } catch (error) {
-    console.error('[API] Generate Proposal error:', error);
+    logger.error('Generate Proposal error', error);
     return NextResponse.json(
       {
         success: false,

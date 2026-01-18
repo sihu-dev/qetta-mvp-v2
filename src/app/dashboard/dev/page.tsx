@@ -19,7 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { RoleGate } from '@/components/layout/RoleGate';
 import { useDashboard } from '@/lib/hooks/useDashboard';
-import { BRAND, SERVICE_WORDING } from '@/lib/brand';
+import { BRAND } from '@/lib/brand';
 
 interface QuickStat {
   label: string;

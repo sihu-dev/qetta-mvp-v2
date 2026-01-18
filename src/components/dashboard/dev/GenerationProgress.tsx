@@ -116,7 +116,6 @@ export function GenerationProgress({ currentStep, progress, error }: GenerationP
           {STEPS.slice(0, -1).map(({ step, label }, index) => {
             const isCurrentStep = index === currentIndex;
             const isPastStep = index < currentIndex;
-            const isFutureStep = index > currentIndex;
 
             return (
               <div key={step} className="flex items-center gap-3">

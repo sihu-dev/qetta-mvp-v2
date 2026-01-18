@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import type {
   RFPAnalysisResult,
   MatchResult,
@@ -185,13 +185,6 @@ export function useStrengthMatch(): UseStrengthMatchReturn {
   const reset = useCallback(() => {
     setState(initialState);
   }, []);
-
-  // 선택된 강점 상세 정보 (메모이제이션)
-  const selectedStrengthDetails = useMemo(() => {
-    return state.selectedStrengths
-      .map((id) => QETTA_STRENGTHS.find((s) => s.id === id))
-      .filter(Boolean);
-  }, [state.selectedStrengths]);
 
   return {
     state,

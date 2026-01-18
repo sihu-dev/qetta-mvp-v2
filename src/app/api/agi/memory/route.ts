@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import type { MemoryEntry, MemoryType } from '@/lib/agi/types';
 import { metrics } from '@/lib/metrics';
+import { parseJson, parseLimit } from '@/lib/api';
+import { logger } from '@/lib/logging';
 
 export interface MemorySearchRequest {
   orgId: string;
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest) {
     const orgId = searchParams.get('orgId');
     const query = searchParams.get('query');
     const type = searchParams.get('type') as MemoryType | null;
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseLimit(searchParams.get('limit'), { defaultLimit: 10 });
 
     if (!orgId) {
       statusCode = 400;
@@ -92,7 +94,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Memory Search Error:', error);
+    logger.error('Memory Search Error', error);
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
@@ -111,8 +113,11 @@ export async function POST(request: NextRequest) {
   let statusCode = 200;
 
   try {
-    const body: MemoryStoreRequest = await request.json();
-    const { orgId, type, content, metadata } = body;
+    const parsed = await parseJson<MemoryStoreRequest>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+    const { orgId, type, content, metadata } = parsed.data;
 
     if (!orgId || !type || !content) {
       statusCode = 400;
@@ -156,7 +161,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Memory Store Error:', error);
+    logger.error('Memory Store Error', error);
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
@@ -194,7 +199,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Memory Delete Error:', error);
+    logger.error('Memory Delete Error', error);
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

@@ -10,6 +10,8 @@ import { createServerClient } from '@/lib/supabase';
 import { buildGovZip, type GovZipOptions } from '@/lib/govzip';
 import type { Event, Action } from '@/lib/agi/types';
 import { metrics } from '@/lib/metrics';
+import { parseJson, parseLimit } from '@/lib/api';
+import { logger } from '@/lib/logging';
 
 export interface CreateSnapshotRequest {
   orgId: string;
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const orgId = searchParams.get('orgId');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseLimit(searchParams.get('limit'));
 
     if (!orgId) {
       statusCode = 400;
@@ -52,7 +54,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Evidence List Error:', error);
+    logger.error('Evidence List Error', error);
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
@@ -71,8 +73,11 @@ export async function POST(request: NextRequest) {
   let statusCode = 200;
 
   try {
-    const body: CreateSnapshotRequest = await request.json();
-    const { orgId, periodStart, periodEnd, retentionYears = 5 } = body;
+    const parsed = await parseJson<CreateSnapshotRequest>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+    const { orgId, periodStart, periodEnd, retentionYears = 5 } = parsed.data;
 
     if (!orgId || !periodStart || !periodEnd) {
       statusCode = 400;
@@ -192,7 +197,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Evidence Create Error:', error);
+    logger.error('Evidence Create Error', error);
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

@@ -13,7 +13,6 @@ import {
   ChartBarSquareIcon,
   ShieldCheckIcon,
   ExclamationTriangleIcon,
-  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { RoleGate } from '@/components/layout/RoleGate';
 import { BRAND } from '@/lib/brand';

@@ -132,13 +132,5 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
   );
 }
 
-export default {
-  Skeleton,
-  SkeletonText,
-  SkeletonCard,
-  SkeletonTable,
-  LoadingSpinner,
-  LoadingOverlay,
-  PageLoading,
-  EmptyState,
-};
+// All components are exported as named exports above
+// Use: import { Skeleton, LoadingSpinner, PageLoading } from './LoadingState'

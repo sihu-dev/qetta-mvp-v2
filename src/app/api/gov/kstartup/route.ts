@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getKStartupClient } from '@/lib/bizsupport/apis/kstartup-client';
+import { logger } from '@/lib/logging';
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
       source: 'k-startup',
     });
   } catch (error) {
-    console.error('[API] K-Startup error:', error);
+    logger.error('K-Startup API error', error);
     return NextResponse.json(
       {
         success: false,

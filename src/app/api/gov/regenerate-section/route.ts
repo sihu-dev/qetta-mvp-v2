@@ -12,10 +12,25 @@ import type {
   ProposalSectionType,
 } from '@/lib/bizsupport/types';
 import { QETTA_COMPANY_PROFILE } from '@/lib/bizsupport/data/gov-programs-2026';
+import { parseJson } from '@/lib/api';
+import { logger } from '@/lib/logging';
+
+interface RegenerateSectionRequestBody {
+  proposalId: string;
+  sectionType: ProposalSectionType;
+  analysisResult: RFPAnalysisResult;
+  matchResult: MatchResult;
+  companyProfile?: CompanyProfile;
+  feedback?: string;
+  style?: 'formal' | 'technical' | 'persuasive';
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const parsed = await parseJson<RegenerateSectionRequestBody>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
     const {
       proposalId,
       sectionType,
@@ -24,15 +39,7 @@ export async function POST(request: NextRequest) {
       companyProfile,
       feedback,
       style,
-    } = body as {
-      proposalId: string;
-      sectionType: ProposalSectionType;
-      analysisResult: RFPAnalysisResult;
-      matchResult: MatchResult;
-      companyProfile?: CompanyProfile;
-      feedback?: string;
-      style?: 'formal' | 'technical' | 'persuasive';
-    };
+    } = parsed.data;
 
     // Validation
     if (!sectionType) {
@@ -106,7 +113,7 @@ export async function POST(request: NextRequest) {
       processingTime,
     });
   } catch (error) {
-    console.error('[API] Regenerate Section error:', error);
+    logger.error('Regenerate Section error', error);
     return NextResponse.json(
       {
         success: false,

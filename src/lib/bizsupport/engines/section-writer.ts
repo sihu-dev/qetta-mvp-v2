@@ -11,21 +11,7 @@ import type {
   ProposalSectionType,
   GeneratedSection,
 } from '../types';
-import type {
-  ProposalDocument,
-  Section1Understanding,
-  Section2Solution,
-  Section3Technical,
-  Section4ExecutionPlan,
-  Section5Team,
-  Section6Experience,
-  Section7CostROI,
-  DEFAULT_SECTION_CONFIGS,
-  SECTION_COPY_TEMPLATES,
-  DOCUMENT_FOOTER,
-} from '../types/proposal-sections';
-import { QETTA_STRENGTHS, getStrengthById } from '../data/qetta-strengths';
-import { QETTA_COMPANY_PROFILE } from '../data/gov-programs-2026';
+import { logger } from '@/lib/logging';
 
 // =============================================================================
 // 섹션별 프롬프트
@@ -136,7 +122,7 @@ export async function generateSection(
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    console.warn('[Section Writer] ANTHROPIC_API_KEY not set, returning mock');
+    logger.warn('ANTHROPIC_API_KEY not set, returning mock section');
     return getMockSection(sectionType, analysis, matchResult);
   }
 
@@ -168,7 +154,7 @@ export async function generateSection(
       };
     }
   } catch (error) {
-    console.error(`[Section Writer] Error generating ${sectionType}:`, error);
+    logger.error(`Section Writer error generating ${sectionType}`, error);
     return {
       type: sectionType,
       title: getSectionTitle(sectionType),
@@ -265,8 +251,9 @@ function countWords(text: string): number {
 function getMockSection(
   sectionType: ProposalSectionType,
   analysis: RFPAnalysisResult,
-  _matchResult: MatchResult
+  matchResult: MatchResult
 ): GeneratedSection {
+  void matchResult; // Used for mock section generation
   const mockContent: Record<ProposalSectionType, string> = {
     UNDERSTANDING: `# 1. 사업 이해도
 
@@ -453,7 +440,7 @@ export async function regenerateSection(
 ): Promise<GeneratedSection> {
   // 피드백이 있으면 프롬프트에 추가
   if (feedback) {
-    console.log(`[Section Writer] Regenerating ${sectionType} with feedback: ${feedback}`);
+    logger.info(`Regenerating section ${sectionType} with feedback`, { feedback });
   }
 
   return generateSection(sectionType, analysis, matchResult, companyProfile);

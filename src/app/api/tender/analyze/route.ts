@@ -18,6 +18,8 @@ import {
 import type { Bid } from '@/lib/tender/types';
 import { metrics } from '@/lib/metrics';
 import { logger } from '@/lib/logging';
+import { parseJson, parseLimit } from '@/lib/api';
+import { DEMO_COMPANY_PROFILE } from '@/lib/config/constants';
 
 export interface AnalyzeRequest {
   bidId: string;
@@ -36,7 +38,10 @@ export async function POST(request: NextRequest) {
   let statusCode = 200;
 
   try {
-    const body: AnalyzeRequest = await request.json();
+    const parsed = await parseJson<AnalyzeRequest>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
     const {
       bidId,
       orgId,
@@ -44,7 +49,7 @@ export async function POST(request: NextRequest) {
       options,
       includeCompetitors = true,
       includeFitScore = true,
-    } = body;
+    } = parsed.data;
 
     if (!bidId || !orgId) {
       statusCode = 400;
@@ -70,16 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Default company profile if not provided
-    const profile: CompanyProfile = companyProfile || {
-      business_number: '123-45-67890',
-      company_name: 'Demo Company',
-      certifications: ['ISO9001', 'ISO27001', '중소기업'],
-      experience_years: 5,
-      past_wins: 10,
-      revenue: 5000000000, // 50억
-      employee_count: 30,
-      specializations: ['스마트팩토리', 'IoT', '데이터분석'],
-    };
+    const profile: CompanyProfile = companyProfile || DEMO_COMPANY_PROFILE;
 
     // Update bid status to analyzing
     await supabase.from('bids').update({ status: 'analyzing' }).eq('id', bidId);
@@ -219,7 +215,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const bidId = searchParams.get('bidId');
     const orgId = searchParams.get('orgId');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseLimit(searchParams.get('limit'));
 
     if (!bidId && !orgId) {
       statusCode = 400;

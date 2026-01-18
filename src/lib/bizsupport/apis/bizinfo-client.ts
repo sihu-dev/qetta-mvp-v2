@@ -6,6 +6,7 @@
 
 import axios, { AxiosInstance } from 'axios';
 import type { GovProgram } from '../types';
+import { logger } from '@/lib/logging';
 
 // =============================================================================
 // 타입 정의
@@ -98,7 +99,7 @@ export class BizinfoClient {
 
       return programs.filter(Boolean).map(this.transformToGovProgram);
     } catch (error) {
-      console.error('[Bizinfo] Search programs error:', error);
+      logger.error('Bizinfo search programs error', error);
       return [];
     }
   }
@@ -277,8 +278,7 @@ export function getBizinfoClient(): BizinfoClient {
   if (!instance) {
     const apiKey = process.env.BIZINFO_API_KEY;
     if (!apiKey) {
-      console.warn('[Bizinfo] API key not configured, using mock client');
-      // Mock client for development
+      logger.warn('Bizinfo API key not configured, using mock client');
       return new BizinfoClient({ apiKey: 'mock-key' });
     }
     instance = new BizinfoClient({ apiKey });

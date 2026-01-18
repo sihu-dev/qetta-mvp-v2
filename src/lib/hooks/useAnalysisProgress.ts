@@ -97,10 +97,11 @@ export function useAnalysisProgress(pollingInterval: number = 1000): UseAnalysis
   /**
    * 진행 상태 폴링
    */
-  const pollProgress = useCallback(async (analysisId: string) => {
+  const pollProgress = useCallback(async (targetAnalysisId: string) => {
+    void targetAnalysisId;
     try {
       // TODO: 실제 API 엔드포인트로 교체
-      // const response = await fetch(`/api/gov/analyze/progress/${analysisId}`);
+      // const response = await fetch(`/api/gov/analyze/progress/${targetAnalysisId}`);
       // const data = await response.json();
 
       // 시뮬레이션: 실제 구현 시 API 응답 사용

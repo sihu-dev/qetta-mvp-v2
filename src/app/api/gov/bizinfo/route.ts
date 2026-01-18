@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getBizinfoClient } from '@/lib/bizsupport/apis/bizinfo-client';
+import { logger } from '@/lib/logging';
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
       source: 'bizinfo',
     });
   } catch (error) {
-    console.error('[API] Bizinfo error:', error);
+    logger.error('Bizinfo API error', error);
     return NextResponse.json(
       {
         success: false,

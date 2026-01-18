@@ -12,6 +12,8 @@ import { verifyGovZip } from '@/lib/govzip';
 import type { VerificationResult } from '@/lib/govzip';
 import * as fs from 'fs';
 import { metrics } from '@/lib/metrics';
+import { parseJson } from '@/lib/api';
+import { logger } from '@/lib/logging';
 
 export interface VerifyRequest {
   snapshotId?: string;
@@ -28,8 +30,11 @@ export async function POST(request: NextRequest) {
   let statusCode = 200;
 
   try {
-    const body: VerifyRequest = await request.json();
-    const { snapshotId, filePath, zipBuffer, expectedHash } = body;
+    const parsed = await parseJson<VerifyRequest>(request);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+    const { snapshotId, filePath, zipBuffer, expectedHash } = parsed.data;
 
     if (!snapshotId && !filePath && !zipBuffer) {
       statusCode = 400;
@@ -123,7 +128,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Evidence Verify Error:', error);
+    logger.error('Evidence Verify Error', error);
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
