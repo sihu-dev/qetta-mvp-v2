@@ -232,7 +232,7 @@ ALTER TABLE bid_analyses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE generated_documents ENABLE ROW LEVEL SECURITY;
 
 -- Helper function: Check org membership
-CREATE OR REPLACE FUNCTION auth.is_org_member(target_org_id UUID)
+CREATE OR REPLACE FUNCTION public.is_org_member(target_org_id UUID)
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
@@ -243,7 +243,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Helper function: Check org admin/manager
-CREATE OR REPLACE FUNCTION auth.is_org_admin(target_org_id UUID)
+CREATE OR REPLACE FUNCTION public.is_org_admin(target_org_id UUID)
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
@@ -257,64 +257,64 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Organizations policies
 CREATE POLICY "Members can view their org" ON organizations
-  FOR SELECT USING (auth.is_org_member(id));
+  FOR SELECT USING (public.is_org_member(id));
 
 -- Org members policies
 CREATE POLICY "Members can view org members" ON org_members
-  FOR SELECT USING (auth.is_org_member(org_id));
+  FOR SELECT USING (public.is_org_member(org_id));
 
 CREATE POLICY "Admins can manage org members" ON org_members
-  FOR ALL USING (auth.is_org_admin(org_id));
+  FOR ALL USING (public.is_org_admin(org_id));
 
 -- Events policies
 CREATE POLICY "Members can view org events" ON events
-  FOR SELECT USING (auth.is_org_member(org_id));
+  FOR SELECT USING (public.is_org_member(org_id));
 
 CREATE POLICY "Members can insert org events" ON events
-  FOR INSERT WITH CHECK (auth.is_org_member(org_id));
+  FOR INSERT WITH CHECK (public.is_org_member(org_id));
 
 -- Actions policies
 CREATE POLICY "Members can view org actions" ON actions
-  FOR SELECT USING (auth.is_org_member(org_id));
+  FOR SELECT USING (public.is_org_member(org_id));
 
 CREATE POLICY "Members can manage org actions" ON actions
-  FOR ALL USING (auth.is_org_member(org_id));
+  FOR ALL USING (public.is_org_member(org_id));
 
 -- Evidence snapshots policies (immutable - no delete)
 CREATE POLICY "Members can view snapshots" ON evidence_snapshots
-  FOR SELECT USING (auth.is_org_member(org_id));
+  FOR SELECT USING (public.is_org_member(org_id));
 
 CREATE POLICY "Admins can create snapshots" ON evidence_snapshots
-  FOR INSERT WITH CHECK (auth.is_org_admin(org_id));
+  FOR INSERT WITH CHECK (public.is_org_admin(org_id));
 
 -- Memory entries policies
 CREATE POLICY "Members can view memories" ON memory_entries
-  FOR SELECT USING (auth.is_org_member(org_id));
+  FOR SELECT USING (public.is_org_member(org_id));
 
 CREATE POLICY "Members can manage memories" ON memory_entries
-  FOR ALL USING (auth.is_org_member(org_id));
+  FOR ALL USING (public.is_org_member(org_id));
 
 -- AGI insights policies
 CREATE POLICY "Members can view insights" ON agi_insights
-  FOR SELECT USING (auth.is_org_member(org_id));
+  FOR SELECT USING (public.is_org_member(org_id));
 
 -- Bids policies
 CREATE POLICY "Members can view bids" ON bids
-  FOR SELECT USING (auth.is_org_member(org_id));
+  FOR SELECT USING (public.is_org_member(org_id));
 
 CREATE POLICY "Members can manage bids" ON bids
-  FOR ALL USING (auth.is_org_member(org_id));
+  FOR ALL USING (public.is_org_member(org_id));
 
 -- Bid analyses policies
 CREATE POLICY "Members can view analyses" ON bid_analyses
-  FOR SELECT USING (auth.is_org_member(org_id));
+  FOR SELECT USING (public.is_org_member(org_id));
 
 -- Generated documents policies
 CREATE POLICY "Members can view documents" ON generated_documents
-  FOR SELECT USING (auth.is_org_member(org_id));
+  FOR SELECT USING (public.is_org_member(org_id));
 
 CREATE POLICY "Members can create documents" ON generated_documents
-  FOR INSERT WITH CHECK (auth.is_org_member(org_id));
+  FOR INSERT WITH CHECK (public.is_org_member(org_id));
 
 -- ============================================================
 -- FUNCTIONS
