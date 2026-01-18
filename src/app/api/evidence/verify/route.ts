@@ -11,6 +11,7 @@ import { createServerClient } from '@/lib/supabase';
 import { verifyGovZip } from '@/lib/govzip';
 import type { VerificationResult } from '@/lib/govzip';
 import * as fs from 'fs';
+import { metrics } from '@/lib/metrics';
 
 export interface VerifyRequest {
   snapshotId?: string;
@@ -23,11 +24,15 @@ export interface VerifyRequest {
  * POST /api/evidence/verify - Verify a Gov ZIP package
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  let statusCode = 200;
+
   try {
     const body: VerifyRequest = await request.json();
     const { snapshotId, filePath, zipBuffer, expectedHash } = body;
 
     if (!snapshotId && !filePath && !zipBuffer) {
+      statusCode = 400;
       return NextResponse.json(
         { error: 'Either snapshotId, filePath, or zipBuffer is required' },
         { status: 400 }
@@ -53,6 +58,7 @@ export async function POST(request: NextRequest) {
 
       if (error) throw error;
       if (!snapshot) {
+        statusCode = 404;
         return NextResponse.json(
           { error: 'Snapshot not found' },
           { status: 404 }
@@ -87,6 +93,7 @@ export async function POST(request: NextRequest) {
     // If filePath is provided, read the file
     if (filePath && !buffer) {
       if (!fs.existsSync(filePath)) {
+        statusCode = 404;
         return NextResponse.json(
           { error: `File not found: ${filePath}` },
           { status: 404 }
@@ -96,6 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!buffer) {
+      statusCode = 400;
       return NextResponse.json(
         { error: 'Unable to obtain ZIP buffer for verification' },
         { status: 400 }
@@ -116,9 +124,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Evidence Verify Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('POST', '/api/evidence/verify', statusCode, (Date.now() - startTime) / 1000);
   }
 }

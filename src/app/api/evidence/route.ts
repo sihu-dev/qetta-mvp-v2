@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { buildGovZip, type GovZipOptions } from '@/lib/govzip';
 import type { Event, Action } from '@/lib/agi/types';
+import { metrics } from '@/lib/metrics';
 
 export interface CreateSnapshotRequest {
   orgId: string;
@@ -21,12 +22,16 @@ export interface CreateSnapshotRequest {
  * GET /api/evidence - List evidence snapshots
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  let statusCode = 200;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const orgId = searchParams.get('orgId');
     const limit = parseInt(searchParams.get('limit') || '20');
 
     if (!orgId) {
+      statusCode = 400;
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
     }
 
@@ -48,10 +53,13 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Evidence List Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('GET', '/api/evidence', statusCode, (Date.now() - startTime) / 1000);
   }
 }
 
@@ -59,11 +67,15 @@ export async function GET(request: NextRequest) {
  * POST /api/evidence - Create a new evidence snapshot
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  let statusCode = 200;
+
   try {
     const body: CreateSnapshotRequest = await request.json();
     const { orgId, periodStart, periodEnd, retentionYears = 5 } = body;
 
     if (!orgId || !periodStart || !periodEnd) {
+      statusCode = 400;
       return NextResponse.json(
         { error: 'Missing required fields: orgId, periodStart, periodEnd' },
         { status: 400 }
@@ -131,6 +143,7 @@ export async function POST(request: NextRequest) {
     const result = await buildGovZip(options);
 
     if (!result.success) {
+      statusCode = 500;
       return NextResponse.json(
         { error: result.error || 'Failed to build Gov ZIP' },
         { status: 500 }
@@ -180,9 +193,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Evidence Create Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('POST', '/api/evidence', statusCode, (Date.now() - startTime) / 1000);
   }
 }

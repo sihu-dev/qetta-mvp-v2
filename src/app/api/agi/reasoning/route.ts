@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import type { ReasoningMode, ReasoningChain } from '@/lib/agi/types';
+import { metrics } from '@/lib/metrics';
 
 export interface ReasoningRequest {
   orgId: string;
@@ -28,12 +29,14 @@ const CONFIDENCE_THRESHOLD = 0.7;
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
+  let statusCode = 200;
 
   try {
     const body: ReasoningRequest = await request.json();
     const { orgId, mode, premises, context } = body;
 
     if (!orgId || !mode || !premises?.length) {
+      statusCode = 400;
       return NextResponse.json(
         { error: 'Missing required fields: orgId, mode, premises' },
         { status: 400 }
@@ -83,10 +86,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Reasoning Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('POST', '/api/agi/reasoning', statusCode, (Date.now() - startTime) / 1000);
   }
 }
 

@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import type { BidSource, CollectResult } from '@/lib/tender/types';
+import { metrics } from '@/lib/metrics';
 
 export interface CollectRequest {
   orgId: string;
@@ -30,12 +31,14 @@ export interface CollectRequest {
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
+  let statusCode = 200;
 
   try {
     const body: CollectRequest = await request.json();
     const { orgId, source, filters, limit = 20 } = body;
 
     if (!orgId || !source) {
+      statusCode = 400;
       return NextResponse.json(
         { error: 'Missing required fields: orgId, source' },
         { status: 400 }
@@ -92,10 +95,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Tender Collect Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('POST', '/api/tender/collect', statusCode, (Date.now() - startTime) / 1000);
   }
 }
 
@@ -183,6 +189,9 @@ async function simulateCollection(
  * GET /api/tender/collect - List collected bids
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  let statusCode = 200;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const orgId = searchParams.get('orgId');
@@ -191,6 +200,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     if (!orgId) {
+      statusCode = 400;
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
     }
 
@@ -217,9 +227,12 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Tender List Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('GET', '/api/tender/collect', statusCode, (Date.now() - startTime) / 1000);
   }
 }

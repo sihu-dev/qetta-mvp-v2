@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { techCombiner } from '@/lib/agi/ultra-thinking';
 import type { BusinessRequirement, Tier } from '@/lib/agi/types';
+import { metrics } from '@/lib/metrics';
 
 export interface OrchestrateRequest {
   type: 'recommend_tech' | 'analyze_events' | 'search_memory' | 'predict';
@@ -30,12 +31,14 @@ export interface OrchestrateResponse {
 
 export async function POST(request: NextRequest): Promise<NextResponse<OrchestrateResponse>> {
   const startTime = Date.now();
+  let statusCode = 200;
 
   try {
     const body: OrchestrateRequest = await request.json();
     const { type, orgId, payload } = body;
 
     if (!type || !orgId) {
+      statusCode = 400;
       return NextResponse.json(
         {
           success: false,
@@ -141,6 +144,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Orchestra
       }
 
       default:
+        statusCode = 400;
         return NextResponse.json(
           {
             success: false,
@@ -164,6 +168,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Orchestra
 
   } catch (error) {
     console.error('AGI Orchestrate Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       {
         success: false,
@@ -173,5 +178,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Orchestra
       },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('POST', '/api/agi/orchestrate', statusCode, (Date.now() - startTime) / 1000);
   }
 }

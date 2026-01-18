@@ -20,6 +20,7 @@
   "browserslist": "defaults, not ie <= 11",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.1",
+    "@sentry/nextjs": "^8",
     "@headlessui/react": "^2.2.6",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.1",

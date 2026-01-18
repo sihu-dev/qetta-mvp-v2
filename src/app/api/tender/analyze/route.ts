@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { analyzeBid, type AnalyzeOptions } from '@/lib/tender/analyzers/bid-analyzer';
 import type { Bid } from '@/lib/tender/types';
+import { metrics } from '@/lib/metrics';
 
 export interface AnalyzeRequest {
   bidId: string;
@@ -28,12 +29,14 @@ export interface AnalyzeRequest {
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
+  let statusCode = 200;
 
   try {
     const body: AnalyzeRequest = await request.json();
     const { bidId, orgId, companyProfile, options } = body;
 
     if (!bidId || !orgId) {
+      statusCode = 400;
       return NextResponse.json(
         { error: 'Missing required fields: bidId, orgId' },
         { status: 400 }
@@ -51,6 +54,7 @@ export async function POST(request: NextRequest) {
 
     if (bidError) throw bidError;
     if (!bid) {
+      statusCode = 404;
       return NextResponse.json({ error: 'Bid not found' }, { status: 404 });
     }
 
@@ -136,10 +140,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Tender Analyze Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('POST', '/api/tender/analyze', statusCode, (Date.now() - startTime) / 1000);
   }
 }
 
@@ -147,12 +154,16 @@ export async function POST(request: NextRequest) {
  * GET /api/tender/analyze - Get analysis for a bid
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  let statusCode = 200;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const bidId = searchParams.get('bidId');
     const orgId = searchParams.get('orgId');
 
     if (!bidId && !orgId) {
+      statusCode = 400;
       return NextResponse.json(
         { error: 'Either bidId or orgId is required' },
         { status: 400 }
@@ -179,9 +190,12 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Tender Analysis List Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('GET', '/api/tender/analyze', statusCode, (Date.now() - startTime) / 1000);
   }
 }

@@ -12,6 +12,7 @@ import { PptxBuilder, type ProposalPptData } from '@/lib/docs/pptx-builder';
 import { XlsxBuilder, type QuotationData } from '@/lib/docs/xlsx-builder';
 import type { DocumentType, DocumentFormat } from '@/lib/tender/types';
 import * as path from 'path';
+import { metrics } from '@/lib/metrics';
 
 export interface GenerateRequest {
   bidId?: string;
@@ -46,12 +47,14 @@ export interface GenerateRequest {
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
+  let statusCode = 200;
 
   try {
     const body: GenerateRequest = await request.json();
     const { bidId, orgId, docType, format, data } = body;
 
     if (!orgId || !docType || !format || !data) {
+      statusCode = 400;
       return NextResponse.json(
         { error: 'Missing required fields: orgId, docType, format, data' },
         { status: 400 }
@@ -119,6 +122,7 @@ export async function POST(request: NextRequest) {
 
       case 'xlsx': {
         if (docType !== 'quotation' || !data.items) {
+          statusCode = 400;
           return NextResponse.json(
             { error: 'XLSX format requires quotation docType and items data' },
             { status: 400 }
@@ -155,6 +159,7 @@ export async function POST(request: NextRequest) {
       }
 
       default:
+        statusCode = 400;
         return NextResponse.json(
           { error: `Unsupported format: ${format}` },
           { status: 400 }
@@ -162,6 +167,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!result.success) {
+      statusCode = 500;
       return NextResponse.json(
         { error: result.error || 'Document generation failed' },
         { status: 500 }
@@ -198,10 +204,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Tender Generate Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('POST', '/api/tender/generate', statusCode, (Date.now() - startTime) / 1000);
   }
 }
 
@@ -209,6 +218,9 @@ export async function POST(request: NextRequest) {
  * GET /api/tender/generate - List generated documents
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  let statusCode = 200;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const orgId = searchParams.get('orgId');
@@ -217,6 +229,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
 
     if (!orgId) {
+      statusCode = 400;
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
     }
 
@@ -243,9 +256,12 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Document List Error:', error);
+    statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    metrics.httpRequest('GET', '/api/tender/generate', statusCode, (Date.now() - startTime) / 1000);
   }
 }
