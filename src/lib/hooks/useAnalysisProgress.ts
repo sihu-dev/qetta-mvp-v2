@@ -6,6 +6,9 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { createComponentLogger } from '@/lib/logging/structured-logger';
+
+const log = createComponentLogger('AnalysisProgress');
 
 // =============================================================================
 // 타입 정의
@@ -150,7 +153,7 @@ export function useAnalysisProgress(pollingInterval: number = 1000): UseAnalysis
         };
       });
     } catch (error) {
-      console.error('[Progress] Polling error:', error);
+      log.error('Polling error', error);
     }
   }, [calculateOverallProgress]);
 

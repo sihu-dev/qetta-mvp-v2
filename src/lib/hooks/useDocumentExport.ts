@@ -16,6 +16,7 @@ export type ExportFormat = 'docx' | 'pdf' | 'xlsx' | 'pptx';
 
 export interface ExportOptions {
   format: ExportFormat;
+  orgId?: string;
   includeAppendix?: boolean;
   watermark?: boolean;
   password?: string;
@@ -107,7 +108,7 @@ export function useDocumentExport(): UseDocumentExportReturn {
           autoGenerate: false,
           docType: 'proposal',
           format: options.format,
-          orgId: 'default', // TODO: 실제 조직 ID 사용
+          orgId: options.orgId || 'demo-org',
           data: {
             title: proposal.rfpTitle,
             company: proposal.company,
