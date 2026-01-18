@@ -1,157 +1,198 @@
-# Qetta MVP v2
+# QETTA MVP v2
 
-> **Production-Level Web App**
-> 스마트공장 + AI바우처 + 제조 설비 공급/수요 Pool 타겟
+> **in·ev·it·able** — 데이터가 흐르면, 결과가 따라옵니다.
 
 ---
 
-## Brand
+## Brand Identity
 
-| | |
-|---|---|
-| **Name** | Qetta |
+| Key | Value |
+|-----|-------|
+| **Name** | QETTA (퀘타) |
 | **Slogan** | in·ev·it·able |
-| **Tagline** | Data Flows. Evidence Follows. |
-| **Color** | #2563eb (Blue - Salient) |
-
----
-
-## Target Market
-
-### 타겟 Pool
-- **Pool SI** (로봇셀 통합사업자): 10,432개사
-- **스마트공장** 수요기업 (기초/고도화)
-- **AI바우처** 수요기업
-- **디지털트윈** 참여기업
-
-### 고객 페르소나
-1. **취장님** - 제조업 대표 (엑셀 친숙)
-2. **설비 공급업체** - Pool SI, 설비 제조사
-3. **정부 담당자** - 지원사업 심사/관리
-
-### 고객 가치 제안 (CVP)
-- OTT칩 **50만원** = MES 대비 99% 비용 절감
-- **불량 -30%** | **정지 -80%** | **ROI 0.7개월**
-- 정부 제출 증빙 **자동화** (Gov ZIP)
+| **Tagline** | Data Flows. Results Follow. |
+| **Color** | #2563eb |
 
 ---
 
 ## Core Pipeline
 
 ```
-[OTT칩] → [AI 예지보전] → [Evidence Registry] → [Document Skills] → [정부 제출]
-   ↓           ↓                  ↓                    ↓
-10분 설치    72h 예측        Gov ZIP 보관      DOCX/XLSX/PPTX
-50만원       고장/불량        MANIFEST v1.2     입찰 제안서
+📡 데이터 수집 → 🔄 정규화 → 💾 정본 저장 → 🧠 필연 엔진 → 📤 출력
+     │                                              │
+     │                                    ┌─────────┴─────────┐
+     │                                    ▼                   ▼
+OTT Chip / CSV / API              📋 Qetta 증빙      📊 Qetta 입찰
+                                  (Gov ZIP)          (DOCX/XLSX/PPTX)
 ```
 
-### 핵심 모듈
-| 모듈 | 설명 | 정부사업 연계 |
-|------|------|--------------|
-| **OTT칩** | 플러그앤플레이 데이터 수집 | 스마트공장 기초 (자동수집) |
-| **AI 예지보전** | 72시간 전 고장/불량 예측 | AI바우처 |
-| **Evidence Registry** | Gov ZIP (변조 탐지 가능) | 증빙 제출 |
-| **Document Skills** | DOCX/XLSX/PPTX 자동생성 | 제안서/보고서 |
+---
 
-### 부가 모듈
-- **Tender**: 입찰 수집/분석 (G2B, UNGM, SAM, KZ)
-- **Real-time Alert**: 카카오/슬랙/이메일
+## 3단계 AI (필연 엔진)
+
+| Layer | 비율 | 방식 | 비용 |
+|-------|------|------|------|
+| **Layer 1** | 95% | 규칙 처리 | ₩0 |
+| **Layer 2** | 4% | 확률 예측 | 최소 |
+| **Layer 3** | 1% | 언어 AI (Claude) | ₩6M/년 상한 |
+
+**원칙**: "95%는 규칙, AI는 백업"
 
 ---
 
 ## Tech Stack
 
-| Category | Stack |
-|----------|-------|
-| Framework | Next.js 15, React 19 |
-| Styling | Tailwind CSS |
-| Database | Supabase PostgreSQL + pgvector |
-| AI | Claude API |
-| Documents | docx, exceljs, pptxgenjs |
-| HTTP | axios, xml2js |
+```yaml
+Framework: Next.js 15, React 19, TypeScript 5.9
+Styling: Tailwind CSS 4
+Database: Supabase PostgreSQL + pgvector + RLS
+AI: Claude API (Layer 3 백업용)
+Documents: docx, exceljs, pptxgenjs
+Testing: Vitest, Playwright
+```
 
 ---
 
-## Project Structure
+## 필수 명령어
+
+```bash
+pnpm dev              # 개발 서버 (localhost:3000)
+pnpm build            # 프로덕션 빌드
+pnpm test             # Vitest 유닛 테스트
+pnpm test:e2e         # Playwright E2E
+pnpm lint --fix       # ESLint + 자동 수정
+pnpm tsc --noEmit     # 타입 체크
+```
+
+---
+
+## 프로젝트 구조
 
 ```
 src/
-├── app/
-│   ├── dashboard/
-│   │   ├── evidence/    # Gov ZIP UI
-│   │   ├── agi/         # Tech Combiner
-│   │   └── tender/      # 입찰 관리
-│   └── api/
-│       ├── evidence/
-│       ├── agi/
-│       └── tender/
-└── lib/
-    ├── agi/             # Ultra Thinking
-    ├── docs/            # docx/xlsx/pptx
-    ├── govzip/          # MANIFEST v1.2
-    └── tender/          # collectors/analyzers
+├── app/                    # Next.js App Router
+│   ├── api/               # API Routes
+│   │   ├── evidence/      # 증빙 API
+│   │   ├── tender/        # 입찰 API
+│   │   └── agi/           # 필연 엔진 API
+│   └── dashboard/         # 대시보드 UI
+├── components/            # React 컴포넌트
+├── lib/                   # 핵심 비즈니스 로직
+│   ├── govzip/           # Gov ZIP 생성 (MANIFEST v1.2)
+│   ├── docs/             # 문서 생성 (DOCX/XLSX/PPTX)
+│   ├── tender/           # 입찰 수집/분석
+│   │   ├── collectors/   # G2B, UNGM, SAM, KZ
+│   │   └── analyzers/    # FitScorer, BidAnalyzer
+│   └── agi/              # 필연 엔진 (3단계 AI)
+└── supabase/             # DB 마이그레이션
 ```
 
 ---
 
-## 3-Tier Intelligence
+## 데이터 테이블 (정본 데이터)
 
-| Tier | % | Method | Cost |
-|------|---|--------|------|
-| 1 | 95% | Rule-based | 0원 |
-| 2 | 4% | ML (pgvector) | 50만원/년 |
-| 3 | 1% | Claude API | 600만원/년 |
+### 증빙 데이터
+- `events` — 설비 상태 기록 (MVTS)
+- `actions` — 조치 이력
+- `evidence_snapshots` — 정부 제출 패키지
+
+### 입찰 데이터
+- `bids` — 입찰 공고
+- `bid_analyses` — 분석 결과
+- `generated_documents` — 생성 문서
 
 ---
 
-## Trigger 'ㄱ'
+## 코드 스타일
 
-사용자가 'ㄱ'만 입력하면 자동 작업 실행
+- **IMPORTANT**: ES modules 사용 (import/export)
+- **IMPORTANT**: TypeScript strict mode 필수
+- **IMPORTANT**: 함수형 컴포넌트 + React 19 훅
+- **YOU MUST**: 새 파일 생성 전 기존 파일 확인
+- **YOU MUST**: 테스트 없이 코드 커밋 금지
 
-1. 메모리 로드
-2. git/build/test 상태 분석
-3. 최적 작업 선택
-4. 품질 게이트: `tsc → lint → build`
-5. 자동 커밋 (push는 승인 필요)
+---
+
+## Git 규칙
+
+```
+브랜치: main | feature/* | fix/* | chore/*
+커밋: conventional commits (feat:, fix:, chore:, docs:, test:)
+Co-Author: Claude Opus 4.5 <noreply@anthropic.com>
+```
+
+---
+
+## 보안 규칙
+
+- **NEVER**: .env 파일 읽기/수정/커밋
+- **NEVER**: secrets, credentials 파일 접근
+- **NEVER**: rm -rf, sudo, --force 명령어
+- **NEVER**: eval(), innerHTML 직접 사용
+- **ALWAYS**: 사용자 입력 검증
+- **ALWAYS**: 파라미터화된 쿼리 사용
+
+---
+
+## 출력물 스펙
+
+### Gov ZIP (정부 제출 패키지)
+```
+gov_package_YYYY-MM.zip
+├── MANIFEST.json      # 무결성 검증 (SHA-256)
+├── events.csv         # 설비 상태 기록
+├── actions.csv        # 조치 이력
+├── report.pdf         # 리포트
+└── photos/            # 조치 사진
+```
+
+### 입찰 문서
+- 제안서: DOCX (docx npm)
+- 견적서: XLSX (exceljs)
+- 발표자료: PPTX (pptxgenjs)
+
+---
+
+## API 수집 원칙
+
+> "API로 수집, 문서는 파싱하지 않는다"
+
+| 소스 | API | 상태 |
+|------|-----|------|
+| 나라장터 (G2B) | 조달청 공공데이터 | ✅ |
+| UNGM | 공개 REST API | ✅ |
+| SAM.gov | api.sam.gov | ✅ |
+| 카자흐스탄 | goszakup.gov.kz | ✅ |
 
 ---
 
 ## Quality Gate
 
 ```bash
-pnpm tsc --noEmit    # TypeScript
-pnpm lint            # ESLint
-pnpm build           # Next.js
+pnpm tsc --noEmit    # TypeScript 에러 0
+pnpm lint            # ESLint 에러 0
+pnpm build           # 빌드 성공
+pnpm test            # 테스트 통과
 ```
 
 ---
 
-## Rebuild Phase
+## 참조 문서
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| 1 | ✅ | 기반 구축 (패키지, 디렉토리, DB) |
-| 2 | ✅ | 수집기 (G2B, UNGM, SAM, KZ) |
-| 3 | ✅ | 분석기 (BidAnalyzer, FitScorer, CompetitorAnalyzer) |
-| 4 | ✅ | 문서 생성 통합 (BidDocumentGenerator) |
-| 5 | ⏳ | E2E 테스트 |
-| 11 | ✅ | Production Hardening |
+- `docs/business-plan/` — 사업계획서
+- `docs/recovered-plans/` — v3 마이그레이션 계획
+- `supabase/migrations/` — DB 스키마
 
 ---
 
 ## Links
 
-- **GitHub**: https://github.com/sihu-dev/qetta-mvp-v2
-- **Production**: https://qetta-mvp-v2.vercel.app
-- **Docs**: `docs/rebuild-plan/`
+| 환경 | URL |
+|------|-----|
+| Production | https://qetta-mvp-v2.vercel.app |
+| GitHub | https://github.com/sihu-dev/qetta-mvp-v2 |
+| Supabase | https://lryxykhbaisdkqhrkbpm.supabase.co |
 
 ---
 
-## Security
-
-- ✅ "변조 탐지 가능" (tamper-evident)
-- ❌ "위조 불가능" (tamper-proof) - 사용 금지
-
----
-
-*Updated: 2026-01-18*
+*Last Updated: 2026-01-19*
