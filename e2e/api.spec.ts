@@ -97,7 +97,9 @@ test.describe('API Endpoints', () => {
 
       const body = await response.json();
       expect(body).toHaveProperty('error');
-      expect(body.error).toContain('orgId');
+      // Error is now an object with message property
+      const errorMessage = typeof body.error === 'string' ? body.error : body.error?.message;
+      expect(errorMessage).toContain('orgId');
     });
 
     test('POST /api/tender/collect should work with simulation mode', async ({ request }) => {
@@ -118,9 +120,11 @@ test.describe('API Endpoints', () => {
       if (response.status() === 200) {
         expect(body).toHaveProperty('success');
         expect(body.success).toBe(true);
-        expect(body).toHaveProperty('result');
-        expect(body.result).toHaveProperty('source');
-        expect(body.result.source).toBe('g2b');
+        // Data is now wrapped in 'data' property
+        expect(body).toHaveProperty('data');
+        expect(body.data).toHaveProperty('result');
+        expect(body.data.result).toHaveProperty('source');
+        expect(body.data.result.source).toBe('g2b');
       } else {
         // If error, should have error message
         expect(body).toHaveProperty('error');
@@ -173,7 +177,9 @@ test.describe('API Endpoints', () => {
 
       const body = await response.json();
       expect(body).toHaveProperty('error');
-      expect(body.error).toContain('orgId');
+      // Error is now an object with message property
+      const errorMessage = typeof body.error === 'string' ? body.error : body.error?.message;
+      expect(errorMessage).toContain('orgId');
     });
 
     test('GET /api/evidence should return snapshots list structure', async ({ request }) => {
@@ -186,9 +192,11 @@ test.describe('API Endpoints', () => {
 
       if (response.status() === 200) {
         expect(body).toHaveProperty('success');
-        expect(body).toHaveProperty('snapshots');
-        expect(body).toHaveProperty('count');
-        expect(Array.isArray(body.snapshots)).toBeTruthy();
+        // Data is now wrapped in 'data' property
+        expect(body).toHaveProperty('data');
+        expect(body.data).toHaveProperty('snapshots');
+        expect(body.data).toHaveProperty('count');
+        expect(Array.isArray(body.data.snapshots)).toBeTruthy();
       } else {
         // If error, should have error message
         expect(body).toHaveProperty('error');
@@ -208,7 +216,9 @@ test.describe('API Endpoints', () => {
 
       const body = await response.json();
       expect(body).toHaveProperty('error');
-      expect(body.error).toContain('periodStart');
+      // Error is now an object with message property
+      const errorMessage = typeof body.error === 'string' ? body.error : body.error?.message;
+      expect(errorMessage).toContain('periodStart');
     });
   });
 
