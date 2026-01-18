@@ -1,18 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm:*)",
-      "Bash(npm:*)",
-      "Bash(git:*)",
-      "Bash(gh:*)",
-      "Bash(node:*)",
-      "Bash(npx:*)",
-      "Bash(ls:*)",
+      "Bash(pnpm *)",
+      "Bash(npm *)",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(node *)",
+      "Bash(npx *)",
+      "Bash(ls *)",
       "Bash(pwd)",
-      "Bash(mkdir:*)",
-      "Bash(cp:*)",
-      "Bash(mv:*)",
-      "Bash(curl:*)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(curl *)",
+      "Bash(cat *)",
+      "Bash(echo *)",
+      "Bash(which *)",
+      "Bash(find *)",
+      "Bash(wc *)",
       "Read",
       "Edit",
       "Write",
@@ -26,31 +31,50 @@
       "mcp__sequential-thinking__*"
     ],
     "deny": [
-      "Bash(rm -rf /*)",
-      "Bash(rm -rf ~/*)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
       "Bash(rm -rf .)",
-      "Bash(sudo:*)",
-      "Bash(*--force*)",
-      "Bash(*> /dev/*)",
-      "Bash(chmod 777*)",
-      "Bash(eval:*)",
-      "Bash(*passwd*)",
-      "Bash(*shadow*)",
-      "Read(.env*)",
+      "Bash(sudo *)",
+      "Bash(* --force)",
+      "Bash(* --force-with-lease)",
+      "Bash(chmod 777 *)",
+      "Bash(eval *)",
+      "Bash(* /etc/passwd)",
+      "Bash(* /etc/shadow)",
+      "Read(.env)",
+      "Read(.env.*)",
       "Read(*credentials*)",
       "Read(*secret*)",
-      "Edit(.env*)",
-      "Write(.env*)"
+      "Read(*.pem)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Write(.env)",
+      "Write(.env.*)"
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "echo '🚀 QETTA Session Started' && git status --short 2>/dev/null || true"
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE '(rm\\s+-rf|sudo|--force|eval\\s|> /dev/)'; then echo 'BLOCKED: Dangerous command detected' >&2; exit 1; fi"
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE '(rm\\s+-rf\\s+[/~]|sudo\\s|--force|eval\\s|chmod\\s+777)'; then echo 'BLOCKED: Dangerous command' >&2; exit 2; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '(\\.env|\\.pem|credentials|secret)'; then echo 'BLOCKED: Sensitive file' >&2; exit 2; fi"
           }
         ]
       }
@@ -61,19 +85,25 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.(ts|tsx)$'; then pnpm lint --fix \"$CLAUDE_FILE_PATH\" 2>/dev/null || true; fi"
+            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.(ts|tsx)$'; then cd /home/sihu2/qetta-mvp-v2 && pnpm lint --fix \"$CLAUDE_FILE_PATH\" 2>/dev/null || true; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE '^git\\s+commit'; then echo '✅ Commit created'; fi"
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "echo \"📝 Processing: $(echo \"$CLAUDE_PROMPT\" | head -c 50)...\""
+      }
     ]
-  },
-  "model": {
-    "default": "claude-sonnet-4-20250514",
-    "plan": "claude-opus-4-5-20251101",
-    "review": "claude-opus-4-5-20251101"
-  },
-  "context": {
-    "includeCoAuthored": true,
-    "autoReadClaudeMd": true
   }
 }
