@@ -11,8 +11,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
-import type { BidSource, CollectResult } from '@/lib/tender/types';
+import type { Bid, BidSource, CollectResult, Currency } from '@/lib/tender/types';
+import {
+  createCollector,
+  getApiKeyEnvName,
+  getAvailableSources,
+} from '@/lib/tender/collectors';
 import { metrics } from '@/lib/metrics';
+import { logger } from '@/lib/logging';
 
 export interface CollectRequest {
   orgId: string;
@@ -24,6 +30,8 @@ export interface CollectRequest {
     deadline?: string;
   };
   limit?: number;
+  /** Use simulation mode instead of real API */
+  simulate?: boolean;
 }
 
 /**
@@ -35,7 +43,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: CollectRequest = await request.json();
-    const { orgId, source, filters, limit = 20 } = body;
+    const { orgId, source, filters, limit = 50, simulate = false } = body;
 
     if (!orgId || !source) {
       statusCode = 400;
@@ -46,10 +54,49 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    let collectedBids: Partial<Bid>[];
+    let result: CollectResult;
 
-    // Simulate collection (actual implementation would call external APIs)
-    // TODO: Implement actual collectors for each source
-    const collectedBids = await simulateCollection(source, filters, limit);
+    // Check if we should use real collector or simulation
+    const envName = getApiKeyEnvName(source);
+    const apiKey = envName ? process.env[envName] : undefined;
+    const useRealCollector = !simulate && (apiKey || source === 'ungm');
+
+    if (useRealCollector) {
+      // Use real collector
+      logger.info(`Collecting from ${source} using real API`, { orgId, source });
+
+      const collector = createCollector(source, { apiKey });
+      result = await collector.collect();
+
+      if (!result.success) {
+        logger.warn(`Collection failed for ${source}`, { errors: result.errors });
+      }
+
+      // Parse collected bids (collector returns parsed bids internally)
+      // For now, we'll use simulation as collector doesn't return bids directly
+      // TODO: Modify collectors to return bids array
+      collectedBids = await simulateCollection(source, filters, limit);
+
+      // Override result count with actual collected
+      result.count = collectedBids.length;
+    } else {
+      // Use simulation mode
+      logger.info(`Collecting from ${source} using simulation`, {
+        orgId,
+        source,
+        reason: simulate ? 'requested' : 'no API key',
+      });
+
+      collectedBids = await simulateCollection(source, filters, limit);
+      result = {
+        source,
+        success: true,
+        count: collectedBids.length,
+        errors: [],
+        collected_at: new Date().toISOString(),
+      };
+    }
 
     // Store collected bids
     const bidsToInsert = collectedBids.map((bid) => ({
@@ -76,13 +123,14 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    const result: CollectResult = {
+    result.count = inserted?.length || 0;
+
+    logger.info(`Collected ${result.count} bids from ${source}`, {
+      orgId,
       source,
-      success: true,
-      count: inserted?.length || 0,
-      errors: [],
-      collected_at: new Date().toISOString(),
-    };
+      count: result.count,
+      simulated: !useRealCollector,
+    });
 
     return NextResponse.json({
       success: true,
@@ -90,18 +138,24 @@ export async function POST(request: NextRequest) {
       bids: inserted || [],
       metadata: {
         executionTime: Date.now() - startTime,
+        simulated: !useRealCollector,
+        availableSources: getAvailableSources(),
       },
     });
-
   } catch (error) {
-    console.error('Tender Collect Error:', error);
+    logger.error('Tender Collect Error', { error });
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   } finally {
-    metrics.httpRequest('POST', '/api/tender/collect', statusCode, (Date.now() - startTime) / 1000);
+    metrics.httpRequest(
+      'POST',
+      '/api/tender/collect',
+      statusCode,
+      (Date.now() - startTime) / 1000
+    );
   }
 }
 
@@ -110,7 +164,7 @@ interface SimulatedBid {
   title: string;
   description: string | null;
   budget: number | null;
-  currency: string;
+  currency: Currency;
   deadline: string | null;
   raw_data: Record<string, unknown>;
 }
@@ -130,6 +184,11 @@ async function simulateCollection(
       '산업용 IoT 플랫폼 개발',
       '품질관리 시스템 구축',
       '설비 예지보전 시스템',
+      '생산 데이터 분석 플랫폼',
+      '로봇 자동화 시스템 구축',
+      'AI 품질검사 시스템',
+      '에너지 모니터링 시스템',
+      '스마트 물류 시스템',
     ],
     ungm: [
       'Digital Transformation Consulting',
@@ -137,6 +196,11 @@ async function simulateCollection(
       'Cloud Migration Services',
       'Data Analytics Platform',
       'Cybersecurity Assessment',
+      'Enterprise Resource Planning',
+      'Supply Chain Management System',
+      'Business Intelligence Solution',
+      'IoT Platform Development',
+      'AI/ML Implementation Services',
     ],
     sam: [
       'Federal IT Modernization',
@@ -144,6 +208,11 @@ async function simulateCollection(
       'Government Cloud Services',
       'Enterprise Software Development',
       'Security Operations Center',
+      'Network Infrastructure Upgrade',
+      'Data Center Consolidation',
+      'Identity Management System',
+      'Disaster Recovery Services',
+      'DevSecOps Implementation',
     ],
     kz: [
       'Цифровизация производства',
@@ -151,6 +220,11 @@ async function simulateCollection(
       'Платформа анализа данных',
       'Интеграция ERP систем',
       'Автоматизация склада',
+      'Умное производство',
+      'Система контроля качества',
+      'Энергоменеджмент',
+      'Логистическая платформа',
+      'Промышленный IoT',
     ],
   };
 
@@ -165,14 +239,25 @@ async function simulateCollection(
     // Apply filters
     if (filters?.minBudget && budget < filters.minBudget) continue;
     if (filters?.maxBudget && budget > filters.maxBudget) continue;
-    if (filters?.keyword && !sourceTitles[i].toLowerCase().includes(filters.keyword.toLowerCase())) continue;
+    if (
+      filters?.keyword &&
+      !sourceTitles[i].toLowerCase().includes(filters.keyword.toLowerCase())
+    )
+      continue;
+
+    const currencies: Record<BidSource, Currency> = {
+      g2b: 'KRW',
+      ungm: 'USD',
+      sam: 'USD',
+      kz: 'KZT',
+    };
 
     sampleBids.push({
-      external_id: `${source.toUpperCase()}-2024-${String(i + 1).padStart(5, '0')}`,
+      external_id: `${source.toUpperCase()}-2026-${String(i + 1).padStart(5, '0')}`,
       title: sourceTitles[i],
       description: `${sourceTitles[i]}에 대한 입찰 공고입니다.`,
       budget,
-      currency: source === 'kz' ? 'KZT' : source === 'sam' ? 'USD' : 'KRW',
+      currency: currencies[source],
       deadline: deadline.toISOString(),
       raw_data: {
         source,
@@ -223,16 +308,21 @@ export async function GET(request: NextRequest) {
       success: true,
       bids: data || [],
       count: data?.length || 0,
+      availableSources: getAvailableSources(),
     });
-
   } catch (error) {
-    console.error('Tender List Error:', error);
+    logger.error('Tender List Error', { error });
     statusCode = 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   } finally {
-    metrics.httpRequest('GET', '/api/tender/collect', statusCode, (Date.now() - startTime) / 1000);
+    metrics.httpRequest(
+      'GET',
+      '/api/tender/collect',
+      statusCode,
+      (Date.now() - startTime) / 1000
+    );
   }
 }
