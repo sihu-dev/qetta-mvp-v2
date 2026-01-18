@@ -3,10 +3,10 @@
  * POST /api/gov/match - Needs-Strength 매칭
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { matchStrengths, getRecommendationLabel } from '@/lib/bizsupport/engines/needs-strength-matcher';
 import type { RFPAnalysisResult, ClientType } from '@/lib/bizsupport/types';
-import { parseJson } from '@/lib/api';
+import { parseJson, successResponse, badRequest, internalError } from '@/lib/api';
 import { logger } from '@/lib/logging';
 
 interface MatchRequestBody {
@@ -26,23 +26,11 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!analysisResult) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'analysisResult is required',
-        },
-        { status: 400 }
-      );
+      return badRequest('analysisResult is required');
     }
 
     if (!clientType) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'clientType is required',
-        },
-        { status: 400 }
-      );
+      return badRequest('clientType is required');
     }
 
     // 매칭 실행
@@ -53,8 +41,7 @@ export async function POST(request: NextRequest) {
       customStrengths,
     });
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       data: result,
       summary: {
         topStrengths: result.topStrengths,
@@ -66,12 +53,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error('Match error', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Matching failed',
-      },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Matching failed');
   }
 }

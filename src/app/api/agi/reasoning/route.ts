@@ -6,11 +6,16 @@
  * Supports: deductive, inductive, abductive, analogical
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import type { ReasoningMode, ReasoningChain } from '@/lib/agi/types';
 import { metrics } from '@/lib/metrics';
-import { parseJson } from '@/lib/api';
+import {
+  parseJson,
+  successResponse,
+  badRequest,
+  internalError,
+} from '@/lib/api';
 import { logger } from '@/lib/logging';
 
 export interface ReasoningRequest {
@@ -42,10 +47,7 @@ export async function POST(request: NextRequest) {
 
     if (!orgId || !mode || !premises?.length) {
       statusCode = 400;
-      return NextResponse.json(
-        { error: 'Missing required fields: orgId, mode, premises' },
-        { status: 400 }
-      );
+      return badRequest('Missing required fields: orgId, mode, premises');
     }
 
     const supabase = createServerClient();
@@ -80,22 +82,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      tier: 'rule',
-      chain,
-      metadata: {
-        executionTime: Date.now() - startTime,
+    return successResponse(
+      {
+        tier: 'rule',
+        chain,
       },
-    });
+      { executionTime: Date.now() - startTime }
+    );
 
   } catch (error) {
     logger.error('Reasoning Error', error);
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest('POST', '/api/agi/reasoning', statusCode, (Date.now() - startTime) / 1000);
   }

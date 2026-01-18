@@ -3,7 +3,7 @@
  * POST /api/gov/generate-proposal - 7섹션 제안서 생성
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { generateAllSections } from '@/lib/bizsupport/engines/section-writer';
 import type {
   RFPAnalysisResult,
@@ -12,7 +12,7 @@ import type {
   ProposalSectionType,
 } from '@/lib/bizsupport/types';
 import { QETTA_COMPANY_PROFILE } from '@/lib/bizsupport/data/gov-programs-2026';
-import { parseJson } from '@/lib/api';
+import { parseJson, successResponse, badRequest, internalError } from '@/lib/api';
 import { logger } from '@/lib/logging';
 
 interface GenerateProposalRequestBody {
@@ -40,13 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!analysisResult || !matchResult) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'analysisResult and matchResult are required',
-        },
-        { status: 400 }
-      );
+      return badRequest('analysisResult and matchResult are required');
     }
 
     // 회사 정보 기본값
@@ -72,30 +66,25 @@ export async function POST(request: NextRequest) {
 
     const proposalId = `proposal-${Date.now()}`;
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        proposalId,
-        rfpId,
-        sections: filteredSections,
-        generatedAt: new Date().toISOString(),
+    return successResponse(
+      {
+        data: {
+          proposalId,
+          rfpId,
+          sections: filteredSections,
+          generatedAt: new Date().toISOString(),
+        },
+        summary: {
+          totalSections: filteredSections.length,
+          successCount: filteredSections.filter((s) => s.status === 'generated').length,
+          errorCount: filteredSections.filter((s) => s.status === 'error').length,
+          totalWords: filteredSections.reduce((sum, s) => sum + s.wordCount, 0),
+        },
       },
-      summary: {
-        totalSections: filteredSections.length,
-        successCount: filteredSections.filter((s) => s.status === 'generated').length,
-        errorCount: filteredSections.filter((s) => s.status === 'error').length,
-        totalWords: filteredSections.reduce((sum, s) => sum + s.wordCount, 0),
-      },
-      processingTime,
-    });
+      { processingTime }
+    );
   } catch (error) {
     logger.error('Generate Proposal error', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Generation failed',
-      },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Generation failed');
   }
 }

@@ -5,11 +5,17 @@
  * Vector memory search and storage using pgvector
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import type { MemoryEntry, MemoryType } from '@/lib/agi/types';
 import { metrics } from '@/lib/metrics';
-import { parseJson, parseLimit } from '@/lib/api';
+import {
+  parseJson,
+  parseLimit,
+  successResponse,
+  badRequest,
+  internalError,
+} from '@/lib/api';
 import { logger } from '@/lib/logging';
 
 export interface MemorySearchRequest {
@@ -43,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     if (!orgId) {
       statusCode = 400;
-      return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
+      return badRequest('Missing orgId');
     }
 
     const supabase = createServerClient();
@@ -65,8 +71,7 @@ export async function GET(request: NextRequest) {
 
       if (error) throw error;
 
-      return NextResponse.json({
-        success: true,
+      return successResponse({
         memories: data || [],
         count: data?.length || 0,
       });
@@ -85,8 +90,7 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       query,
       memories: data || [],
       count: data?.length || 0,
@@ -96,10 +100,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error('Memory Search Error', error);
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest('GET', '/api/agi/memory', statusCode, (Date.now() - startTime) / 1000);
   }
@@ -121,10 +122,7 @@ export async function POST(request: NextRequest) {
 
     if (!orgId || !type || !content) {
       statusCode = 400;
-      return NextResponse.json(
-        { error: 'Missing required fields: orgId, type, content' },
-        { status: 400 }
-      );
+      return badRequest('Missing required fields: orgId, type, content');
     }
 
     const supabase = createServerClient();
@@ -155,18 +153,12 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({
-      success: true,
-      memory: data,
-    });
+    return successResponse({ memory: data });
 
   } catch (error) {
     logger.error('Memory Store Error', error);
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest('POST', '/api/agi/memory', statusCode, (Date.now() - startTime) / 1000);
   }
@@ -185,7 +177,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!id) {
       statusCode = 400;
-      return NextResponse.json({ error: 'Missing memory id' }, { status: 400 });
+      return badRequest('Missing memory id');
     }
 
     const supabase = createServerClient();
@@ -196,15 +188,12 @@ export async function DELETE(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true });
+    return successResponse({ deleted: true });
 
   } catch (error) {
     logger.error('Memory Delete Error', error);
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest('DELETE', '/api/agi/memory', statusCode, (Date.now() - startTime) / 1000);
   }

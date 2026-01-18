@@ -9,7 +9,7 @@
  * - kz (Kazakhstan)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import type { Bid, BidSource, CollectResult, Currency } from '@/lib/tender/types';
 import {
@@ -19,7 +19,13 @@ import {
 } from '@/lib/tender/collectors';
 import { metrics } from '@/lib/metrics';
 import { logger } from '@/lib/logging';
-import { parseJson, parseLimit } from '@/lib/api';
+import {
+  parseJson,
+  parseLimit,
+  successResponse,
+  badRequest,
+  internalError,
+} from '@/lib/api';
 
 export interface CollectRequest {
   orgId: string;
@@ -51,10 +57,7 @@ export async function POST(request: NextRequest) {
 
     if (!orgId || !source) {
       statusCode = 400;
-      return NextResponse.json(
-        { error: 'Missing required fields: orgId, source' },
-        { status: 400 }
-      );
+      return badRequest('Missing required fields: orgId, source');
     }
 
     const supabase = createServerClient();
@@ -136,23 +139,21 @@ export async function POST(request: NextRequest) {
       simulated: !useRealCollector,
     });
 
-    return NextResponse.json({
-      success: true,
-      result,
-      bids: inserted || [],
-      metadata: {
+    return successResponse(
+      {
+        result,
+        bids: inserted || [],
+      },
+      {
         executionTime: Date.now() - startTime,
         simulated: !useRealCollector,
         availableSources: getAvailableSources(),
-      },
-    });
+      }
+    );
   } catch (error) {
     logger.error('Tender Collect Error', { error });
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest(
       'POST',
@@ -290,7 +291,7 @@ export async function GET(request: NextRequest) {
 
     if (!orgId) {
       statusCode = 400;
-      return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
+      return badRequest('Missing orgId');
     }
 
     const supabase = createServerClient();
@@ -308,8 +309,7 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       bids: data || [],
       count: data?.length || 0,
       availableSources: getAvailableSources(),
@@ -317,10 +317,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error('Tender List Error', { error });
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest(
       'GET',

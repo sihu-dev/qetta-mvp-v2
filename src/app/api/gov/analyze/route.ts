@@ -3,10 +3,10 @@
  * POST /api/gov/analyze - 4-Layer RFP 분석
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { analyzeRFP } from '@/lib/bizsupport/engines/deep-rfp-analyzer';
 import type { AnalyzeRequest, ClientType } from '@/lib/bizsupport/types';
-import { parseJson } from '@/lib/api';
+import { parseJson, successResponse, badRequest, internalError } from '@/lib/api';
 import { logger } from '@/lib/logging';
 
 interface AnalyzeRequestBody {
@@ -26,26 +26,14 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!rfpText && !rfpUrl) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Either rfpText or rfpUrl is required',
-        },
-        { status: 400 }
-      );
+      return badRequest('Either rfpText or rfpUrl is required');
     }
 
     // URL에서 텍스트 추출 (TODO: 웹 스크래핑)
     const text = rfpText || '';
     if (rfpUrl && !rfpText) {
       // Placeholder: URL 처리
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'URL processing not yet implemented. Please provide rfpText.',
-        },
-        { status: 400 }
-      );
+      return badRequest('URL processing not yet implemented. Please provide rfpText.');
     }
 
     // 4-Layer 분석 실행
@@ -58,26 +46,21 @@ export async function POST(request: NextRequest) {
     });
     const processingTime = Date.now() - startTime;
 
-    return NextResponse.json({
-      success: true,
-      data: result,
-      processingTime,
-      layers: {
-        layer1: 'Metadata extraction',
-        layer2a: 'TF-IDF keywords',
-        layer2b: 'Semantic matching (pgvector)',
-        layer3: 'Hidden needs inference (Claude)',
-        layer4: 'Strategy formulation',
+    return successResponse(
+      {
+        data: result,
+        layers: {
+          layer1: 'Metadata extraction',
+          layer2a: 'TF-IDF keywords',
+          layer2b: 'Semantic matching (pgvector)',
+          layer3: 'Hidden needs inference (Claude)',
+          layer4: 'Strategy formulation',
+        },
       },
-    });
+      { processingTime }
+    );
   } catch (error) {
     logger.error('RFP Analyze error', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Analysis failed',
-      },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Analysis failed');
   }
 }

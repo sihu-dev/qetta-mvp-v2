@@ -6,7 +6,7 @@
  * Supports both manual data input and automatic generation from bid analysis
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { DocxBuilder, type DocxContent } from '@/lib/docs/docx-builder';
 import { PptxBuilder, type ProposalPptData } from '@/lib/docs/pptx-builder';
@@ -26,7 +26,14 @@ import * as path from 'path';
 import * as os from 'os';
 import { metrics } from '@/lib/metrics';
 import { logger } from '@/lib/logging';
-import { parseJson, parseLimit } from '@/lib/api';
+import {
+  parseJson,
+  parseLimit,
+  successResponse,
+  badRequest,
+  notFound,
+  internalError,
+} from '@/lib/api';
 import { DEMO_COMPANY_PROFILE } from '@/lib/config/constants';
 
 export interface GenerateRequest {
@@ -92,7 +99,7 @@ export async function POST(request: NextRequest) {
 
     if (!orgId) {
       statusCode = 400;
-      return NextResponse.json({ error: 'Missing required field: orgId' }, { status: 400 });
+      return badRequest('Missing required field: orgId');
     }
 
     const supabase = createServerClient();
@@ -103,10 +110,7 @@ export async function POST(request: NextRequest) {
     if (autoGenerate) {
       if (!bidId) {
         statusCode = 400;
-        return NextResponse.json(
-          { error: 'bidId is required for auto-generate mode' },
-          { status: 400 }
-        );
+        return badRequest('bidId is required for auto-generate mode');
       }
 
       logger.info('Auto-generating documents from bid analysis', { bidId, orgId });
@@ -121,7 +125,7 @@ export async function POST(request: NextRequest) {
       if (bidError) throw bidError;
       if (!bid) {
         statusCode = 404;
-        return NextResponse.json({ error: 'Bid not found' }, { status: 404 });
+        return notFound('Bid');
       }
 
       // Default company profile
@@ -231,7 +235,15 @@ export async function POST(request: NextRequest) {
         presentation: results.presentation?.success,
       });
 
-      return NextResponse.json(response);
+      return successResponse(
+        {
+          mode: response.mode,
+          documents: response.documents,
+          summary: response.summary,
+          buffers: response.buffers,
+        },
+        response.metadata
+      );
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -239,10 +251,7 @@ export async function POST(request: NextRequest) {
     // ═══════════════════════════════════════════════════════════
     if (!docType || !format || !data) {
       statusCode = 400;
-      return NextResponse.json(
-        { error: 'Missing required fields: docType, format, data (or use autoGenerate: true)' },
-        { status: 400 }
-      );
+      return badRequest('Missing required fields: docType, format, data (or use autoGenerate: true)');
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -306,10 +315,7 @@ export async function POST(request: NextRequest) {
       case 'xlsx': {
         if (docType !== 'quotation' || !data.items) {
           statusCode = 400;
-          return NextResponse.json(
-            { error: 'XLSX format requires quotation docType and items data' },
-            { status: 400 }
-          );
+          return badRequest('XLSX format requires quotation docType and items data');
         }
 
         const xlsxData: QuotationData = {
@@ -343,18 +349,12 @@ export async function POST(request: NextRequest) {
 
       default:
         statusCode = 400;
-        return NextResponse.json(
-          { error: `Unsupported format: ${format}` },
-          { status: 400 }
-        );
+        return badRequest(`Unsupported format: ${format}`);
     }
 
     if (!result.success) {
       statusCode = 500;
-      return NextResponse.json(
-        { error: result.error || 'Document generation failed' },
-        { status: 500 }
-      );
+      return internalError(result.error || 'Document generation failed');
     }
 
     // Store document metadata
@@ -377,21 +377,15 @@ export async function POST(request: NextRequest) {
 
     if (saveError) throw saveError;
 
-    return NextResponse.json({
-      success: true,
-      document,
-      metadata: {
-        executionTime: Date.now() - startTime,
-      },
-    });
+    return successResponse(
+      { document },
+      { executionTime: Date.now() - startTime }
+    );
 
   } catch (error) {
     logger.error('Tender Generate Error', error);
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest('POST', '/api/tender/generate', statusCode, (Date.now() - startTime) / 1000);
   }
@@ -413,7 +407,7 @@ export async function GET(request: NextRequest) {
 
     if (!orgId) {
       statusCode = 400;
-      return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
+      return badRequest('Missing orgId');
     }
 
     const supabase = createServerClient();
@@ -431,8 +425,7 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       documents: data || [],
       count: data?.length || 0,
     });
@@ -440,10 +433,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error('Document List Error', error);
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest('GET', '/api/tender/generate', statusCode, (Date.now() - startTime) / 1000);
   }

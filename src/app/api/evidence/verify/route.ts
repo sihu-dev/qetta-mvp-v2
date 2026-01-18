@@ -6,13 +6,19 @@
  * "변조 탐지 가능" (tamper-evident)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { verifyGovZip } from '@/lib/govzip';
 import type { VerificationResult } from '@/lib/govzip';
 import * as fs from 'fs';
 import { metrics } from '@/lib/metrics';
-import { parseJson } from '@/lib/api';
+import {
+  parseJson,
+  successResponse,
+  badRequest,
+  notFound,
+  internalError,
+} from '@/lib/api';
 import { logger } from '@/lib/logging';
 
 export interface VerifyRequest {
@@ -38,10 +44,7 @@ export async function POST(request: NextRequest) {
 
     if (!snapshotId && !filePath && !zipBuffer) {
       statusCode = 400;
-      return NextResponse.json(
-        { error: 'Either snapshotId, filePath, or zipBuffer is required' },
-        { status: 400 }
-      );
+      return badRequest('Either snapshotId, filePath, or zipBuffer is required');
     }
 
     let buffer: Buffer | null = null;
@@ -64,10 +67,7 @@ export async function POST(request: NextRequest) {
       if (error) throw error;
       if (!snapshot) {
         statusCode = 404;
-        return NextResponse.json(
-          { error: 'Snapshot not found' },
-          { status: 404 }
-        );
+        return notFound('Snapshot');
       }
 
       storedHash = snapshot.package_hash;
@@ -76,8 +76,7 @@ export async function POST(request: NextRequest) {
       if (snapshot.storage_path && fs.existsSync(snapshot.storage_path)) {
         buffer = fs.readFileSync(snapshot.storage_path);
       } else {
-        return NextResponse.json({
-          success: true,
+        return successResponse({
           verification: {
             valid: true,
             manifestValid: true,
@@ -99,27 +98,20 @@ export async function POST(request: NextRequest) {
     if (filePath && !buffer) {
       if (!fs.existsSync(filePath)) {
         statusCode = 404;
-        return NextResponse.json(
-          { error: `File not found: ${filePath}` },
-          { status: 404 }
-        );
+        return notFound(`File: ${filePath}`);
       }
       buffer = fs.readFileSync(filePath);
     }
 
     if (!buffer) {
       statusCode = 400;
-      return NextResponse.json(
-        { error: 'Unable to obtain ZIP buffer for verification' },
-        { status: 400 }
-      );
+      return badRequest('Unable to obtain ZIP buffer for verification');
     }
 
     // Verify the package
     const result: VerificationResult = await verifyGovZip(buffer, storedHash || undefined);
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       verification: result,
       tamperEvident: true,
       message: result.valid
@@ -130,10 +122,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error('Evidence Verify Error', error);
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest('POST', '/api/evidence/verify', statusCode, (Date.now() - startTime) / 1000);
   }

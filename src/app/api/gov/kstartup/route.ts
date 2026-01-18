@@ -3,8 +3,9 @@
  * GET /api/gov/kstartup - 창업진흥원 지원사업 조회
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getKStartupClient } from '@/lib/bizsupport/apis/kstartup-client';
+import { successResponse, internalError } from '@/lib/api';
 import { logger } from '@/lib/logging';
 
 export async function GET(request: NextRequest) {
@@ -37,20 +38,13 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       data: programs,
       count: programs.length,
       source: 'k-startup',
     });
   } catch (error) {
     logger.error('K-Startup API error', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch K-Startup programs',
-      },
-      { status: 500 }
-    );
+    return internalError('Failed to fetch K-Startup programs');
   }
 }

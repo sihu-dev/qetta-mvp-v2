@@ -3,7 +3,7 @@
  * POST /api/gov/regenerate-section - 특정 섹션 재생성
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { regenerateSection } from '@/lib/bizsupport/engines/section-writer';
 import type {
   RFPAnalysisResult,
@@ -12,7 +12,7 @@ import type {
   ProposalSectionType,
 } from '@/lib/bizsupport/types';
 import { QETTA_COMPANY_PROFILE } from '@/lib/bizsupport/data/gov-programs-2026';
-import { parseJson } from '@/lib/api';
+import { parseJson, successResponse, badRequest, internalError } from '@/lib/api';
 import { logger } from '@/lib/logging';
 
 interface RegenerateSectionRequestBody {
@@ -43,23 +43,11 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!sectionType) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'sectionType is required',
-        },
-        { status: 400 }
-      );
+      return badRequest('sectionType is required');
     }
 
     if (!analysisResult || !matchResult) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'analysisResult and matchResult are required',
-        },
-        { status: 400 }
-      );
+      return badRequest('analysisResult and matchResult are required');
     }
 
     // 유효한 섹션 타입 확인
@@ -74,13 +62,7 @@ export async function POST(request: NextRequest) {
     ];
 
     if (!validSections.includes(sectionType)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid sectionType. Must be one of: ${validSections.join(', ')}`,
-        },
-        { status: 400 }
-      );
+      return badRequest(`Invalid sectionType. Must be one of: ${validSections.join(', ')}`);
     }
 
     // 회사 정보 기본값
@@ -101,25 +83,20 @@ export async function POST(request: NextRequest) {
     );
     const processingTime = Date.now() - startTime;
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        proposalId,
-        section: regeneratedSection,
-        regeneratedAt: new Date().toISOString(),
+    return successResponse(
+      {
+        data: {
+          proposalId,
+          section: regeneratedSection,
+          regeneratedAt: new Date().toISOString(),
+        },
+        feedback: feedback || null,
+        style: style || 'balanced',
       },
-      feedback: feedback || null,
-      style: style || 'balanced',
-      processingTime,
-    });
+      { processingTime }
+    );
   } catch (error) {
     logger.error('Regenerate Section error', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Regeneration failed',
-      },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Regeneration failed');
   }
 }

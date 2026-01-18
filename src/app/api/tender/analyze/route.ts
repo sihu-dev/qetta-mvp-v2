@@ -5,7 +5,7 @@
  * Analyze bids for company fit, competition, and recommendations
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import {
   analyzeBid,
@@ -18,7 +18,14 @@ import {
 import type { Bid } from '@/lib/tender/types';
 import { metrics } from '@/lib/metrics';
 import { logger } from '@/lib/logging';
-import { parseJson, parseLimit } from '@/lib/api';
+import {
+  parseJson,
+  parseLimit,
+  successResponse,
+  badRequest,
+  notFound,
+  internalError,
+} from '@/lib/api';
 import { DEMO_COMPANY_PROFILE } from '@/lib/config/constants';
 
 export interface AnalyzeRequest {
@@ -53,10 +60,7 @@ export async function POST(request: NextRequest) {
 
     if (!bidId || !orgId) {
       statusCode = 400;
-      return NextResponse.json(
-        { error: 'Missing required fields: bidId, orgId' },
-        { status: 400 }
-      );
+      return badRequest('Missing required fields: bidId, orgId');
     }
 
     const supabase = createServerClient();
@@ -71,7 +75,7 @@ export async function POST(request: NextRequest) {
     if (bidError) throw bidError;
     if (!bid) {
       statusCode = 404;
-      return NextResponse.json({ error: 'Bid not found' }, { status: 404 });
+      return notFound('Bid');
     }
 
     // Default company profile if not provided
@@ -151,49 +155,47 @@ export async function POST(request: NextRequest) {
       competitionLevel: analysis.competition_level,
     });
 
-    return NextResponse.json({
-      success: true,
-      analysis: savedAnalysis,
-      fitScore: fitScore
-        ? {
-            overall: fitScore.overall,
-            grade: fitScore.grade,
-            recommendation: fitScore.recommendation,
-            recommendationText: getRecommendationText(fitScore.recommendation),
-            breakdown: fitScore.breakdown,
-          }
-        : null,
-      competitors: competitorAnalysis
-        ? {
-            level: competitorAnalysis.competition_level,
-            estimatedCount: competitorAnalysis.estimated_competitors,
-            profiles: competitorAnalysis.competitor_profiles,
-            insights: competitorAnalysis.market_insights,
-            strategies: competitorAnalysis.strategy_recommendations,
-          }
-        : null,
-      summary: {
-        fitScore: finalFitScore,
-        fitGrade: fitScore?.grade || null,
-        competitionLevel: analysis.competition_level,
-        qualificationsMet: analysis.qualifications_met.filter((q) => q.met).length,
-        qualificationsTotal: analysis.qualifications_met.length,
-        requiredDocuments: analysis.required_documents.length,
-        recommendationsCount: analysis.recommendations.length,
-        estimatedCompetitors: competitorAnalysis?.estimated_competitors || null,
+    return successResponse(
+      {
+        analysis: savedAnalysis,
+        fitScore: fitScore
+          ? {
+              overall: fitScore.overall,
+              grade: fitScore.grade,
+              recommendation: fitScore.recommendation,
+              recommendationText: getRecommendationText(fitScore.recommendation),
+              breakdown: fitScore.breakdown,
+            }
+          : null,
+        competitors: competitorAnalysis
+          ? {
+              level: competitorAnalysis.competition_level,
+              estimatedCount: competitorAnalysis.estimated_competitors,
+              profiles: competitorAnalysis.competitor_profiles,
+              insights: competitorAnalysis.market_insights,
+              strategies: competitorAnalysis.strategy_recommendations,
+            }
+          : null,
+        summary: {
+          fitScore: finalFitScore,
+          fitGrade: fitScore?.grade || null,
+          competitionLevel: analysis.competition_level,
+          qualificationsMet: analysis.qualifications_met.filter((q) => q.met).length,
+          qualificationsTotal: analysis.qualifications_met.length,
+          requiredDocuments: analysis.required_documents.length,
+          recommendationsCount: analysis.recommendations.length,
+          estimatedCompetitors: competitorAnalysis?.estimated_competitors || null,
+        },
       },
-      metadata: {
+      {
         executionTime: Date.now() - startTime,
         analyzedAt: new Date().toISOString(),
-      },
-    });
+      }
+    );
   } catch (error) {
     logger.error('Tender Analyze Error', { error });
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest(
       'POST',
@@ -219,10 +221,7 @@ export async function GET(request: NextRequest) {
 
     if (!bidId && !orgId) {
       statusCode = 400;
-      return NextResponse.json(
-        { error: 'Either bidId or orgId is required' },
-        { status: 400 }
-      );
+      return badRequest('Either bidId or orgId is required');
     }
 
     const supabase = createServerClient();
@@ -239,18 +238,14 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       analyses: data || [],
       count: data?.length || 0,
     });
   } catch (error) {
     logger.error('Tender Analysis List Error', { error });
     statusCode = 500;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return internalError(error instanceof Error ? error.message : 'Unknown error');
   } finally {
     metrics.httpRequest(
       'GET',
