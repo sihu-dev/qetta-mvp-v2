@@ -96,15 +96,50 @@ export async function apiRequest<T>(
     }
 
     if (!response.ok) {
+      // Handle new API response format: { success: false, error: { code, message } }
+      const errorData = data as { error?: string | { code?: string; message?: string } } | undefined;
+      let errorMessage = response.statusText;
+
+      if (errorData?.error) {
+        if (typeof errorData.error === 'string') {
+          errorMessage = errorData.error;
+        } else if (typeof errorData.error === 'object' && errorData.error.message) {
+          errorMessage = errorData.error.message;
+        }
+      }
+
       return {
         success: false,
         error: {
-          message: (data as { error?: string })?.error || response.statusText,
+          message: errorMessage,
           status: response.status,
         },
       };
     }
 
+    // Handle new API response format: { success: boolean, data?: T, error?: { code, message } }
+    const apiResponse = data as { success?: boolean; data?: T; error?: { code?: string; message?: string } };
+
+    // If the response is in the new API format
+    if (apiResponse && typeof apiResponse.success === 'boolean') {
+      if (!apiResponse.success) {
+        return {
+          success: false,
+          error: {
+            message: apiResponse.error?.message || 'Request failed',
+            code: apiResponse.error?.code,
+            status: response.status,
+          },
+        };
+      }
+      // Unwrap the nested data
+      return {
+        success: true,
+        data: apiResponse.data as T,
+      };
+    }
+
+    // Fallback for old format or direct data responses
     return {
       success: true,
       data,

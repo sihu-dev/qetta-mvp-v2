@@ -54,8 +54,10 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
 
     return successResponse({
-      snapshots: data || [],
-      count: data?.length || 0,
+      records: data || [],
+      total: data?.length || 0,
+      page: 1,
+      pageSize: limit,
     });
 
   } catch (error) {
