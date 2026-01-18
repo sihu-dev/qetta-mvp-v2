@@ -104,6 +104,21 @@ export interface TenderRecord {
   updated_at: string;
 }
 
+export interface QualificationCheck {
+  requirement: string;
+  met: boolean;
+  note?: string;
+}
+
+export interface RequiredDocument {
+  name: string;
+  format: string[];
+  mandatory: boolean;
+  deadline?: string;
+}
+
+export type CompetitionLevel = 'low' | 'medium' | 'high';
+
 export interface TenderAnalysis {
   id: string;
   tender_id: string;
@@ -120,6 +135,10 @@ export interface TenderAnalysis {
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
+  qualifications_met?: QualificationCheck[];
+  required_documents?: RequiredDocument[];
+  competition_level?: CompetitionLevel;
+  win_probability?: number;
   competitor_count?: number;
   market_insights?: string[];
   created_at: string;

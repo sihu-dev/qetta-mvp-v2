@@ -12,6 +12,8 @@ import {
   ArchiveBoxIcon,
 } from '@heroicons/react/24/outline';
 import { BRAND, SERVICE_WORDING, INTELLIGENCE_TIERS } from '@/lib/brand';
+import { CostSavingsCard } from '@/components/dashboard/CostSavingsCard';
+import CorePipelineWidget from '@/components/dashboard/CorePipelineWidget';
 import { useDashboard } from '@/lib/hooks/useDashboard';
 
 interface RecentActivity {
@@ -175,6 +177,9 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Core Pipeline */}
+      <CorePipelineWidget />
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat) => (
@@ -200,48 +205,10 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Activity */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">최근 활동</h2>
-          {activities.length > 0 ? (
-            <div className="space-y-4">
-              {activities.map((activity) => {
-                const Icon = typeIcons[activity.type];
-                return (
-                  <div
-                    key={activity.id}
-                    className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <Icon className="h-5 w-5 text-gray-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{activity.title}</p>
-                        <p className="text-sm text-gray-500">{activity.timestamp}</p>
-                      </div>
-                    </div>
-                    {activity.status && (
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(activity.status)}`}
-                      >
-                        {SERVICE_WORDING.status[
-                          activity.status as keyof typeof SERVICE_WORDING.status
-                        ] || activity.status}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>아직 활동 내역이 없습니다.</p>
-            </div>
-          )}
-        </div>
+      {/* Cost Savings + Intelligence Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Cost Savings Card */}
+        <CostSavingsCard />
 
         {/* Intelligence Summary */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -303,6 +270,50 @@ export default function DashboardPage() {
               예측 {metrics?.agi.predictions_today || 0}건
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Activity Section */}
+      <div className="grid grid-cols-1 gap-8">
+        {/* Recent Activity */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">최근 활동</h2>
+          {activities.length > 0 ? (
+            <div className="space-y-4">
+              {activities.map((activity) => {
+                const Icon = typeIcons[activity.type];
+                return (
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <Icon className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{activity.title}</p>
+                        <p className="text-sm text-gray-500">{activity.timestamp}</p>
+                      </div>
+                    </div>
+                    {activity.status && (
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(activity.status)}`}
+                      >
+                        {SERVICE_WORDING.status[
+                          activity.status as keyof typeof SERVICE_WORDING.status
+                        ] || activity.status}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>아직 활동 내역이 없습니다.</p>
+            </div>
+          )}
         </div>
       </div>
 
