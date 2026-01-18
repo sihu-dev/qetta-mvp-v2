@@ -67,7 +67,7 @@ export default defineConfig({
     // 2. 인증이 필요없는 테스트 (public)
     {
       name: 'public',
-      testMatch: ['**/landing.spec.ts', '**/api.spec.ts'],
+      testMatch: ['**/landing.spec.ts', '**/api.spec.ts', '**/gov-api.spec.ts'],
       use: { ...devices['Desktop Chrome'] },
     },
 

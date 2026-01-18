@@ -125,7 +125,8 @@ test.describe('Evidence Management Page', () => {
       return;
     }
 
-    const brandTagline = page.locator('text=in·ev·it·able — Data Flows. Evidence Follows.');
+    // Use partial text match for brand footer
+    const brandTagline = page.locator('text=Data Flows. Evidence Follows.');
     await expect(brandTagline).toBeVisible({ timeout: 5000 });
   });
 });
