@@ -12,7 +12,7 @@
 | **Name** | Qetta |
 | **Slogan** | in·ev·it·able |
 | **Tagline** | Data Flows. Evidence Follows. |
-| **Color** | #9333ea (Purple) |
+| **Color** | #2563eb (Blue - Salient) |
 
 ---
 

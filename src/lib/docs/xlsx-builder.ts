@@ -113,7 +113,7 @@ export class XlsxBuilder {
       sheet.getCell(`A${rowIndex}`).fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFF3E8FF' }, // Light purple
+        fgColor: { argb: 'FFE0F2FE' }, // Light blue (Salient)
       };
       rowIndex++;
 
@@ -147,7 +147,7 @@ export class XlsxBuilder {
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF9333EA' }, // Qetta purple
+        fgColor: { argb: 'FF2563EB' }, // Qetta blue (Salient)
       };
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       cell.border = {

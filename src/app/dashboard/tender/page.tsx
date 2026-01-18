@@ -1,104 +1,71 @@
 'use client';
 
 import { useState } from 'react';
+import {
+  ArrowPathIcon,
+  DocumentTextIcon,
+  DocumentDuplicateIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline';
+import { BRAND, SERVICE_WORDING } from '@/lib/brand';
+import { useTender } from '@/lib/hooks/useTender';
+import type { TenderSource } from '@/lib/api/types';
 
-interface Bid {
-  id: string;
-  source: 'g2b' | 'ungm' | 'sam' | 'kz';
-  title: string;
-  budget: number;
-  currency: string;
-  deadline: string;
-  status: 'new' | 'analyzing' | 'interested' | 'applied' | 'won' | 'lost';
-  fit_score: number | null;
-}
+const sourceLabels = SERVICE_WORDING.tender.sources;
 
 export default function TenderPage() {
-  const [bids, setBids] = useState<Bid[]>([
-    {
-      id: '1',
-      source: 'g2b',
-      title: '스마트팩토리 MES 시스템 구축',
-      budget: 850000000,
-      currency: 'KRW',
-      deadline: '2024-02-15',
-      status: 'analyzing',
-      fit_score: 78,
-    },
-    {
-      id: '2',
-      source: 'g2b',
-      title: '설비 예지보전 시스템 도입',
-      budget: 450000000,
-      currency: 'KRW',
-      deadline: '2024-02-20',
-      status: 'interested',
-      fit_score: 92,
-    },
-    {
-      id: '3',
-      source: 'ungm',
-      title: 'Digital Transformation Consulting',
-      budget: 500000,
-      currency: 'USD',
-      deadline: '2024-03-01',
-      status: 'new',
-      fit_score: null,
-    },
-    {
-      id: '4',
-      source: 'sam',
-      title: 'Cloud Migration Services',
-      budget: 1200000,
-      currency: 'USD',
-      deadline: '2024-02-28',
-      status: 'applied',
-      fit_score: 85,
-    },
-  ]);
+  const {
+    tenders,
+    loading,
+    collecting,
+    analyzing,
+    error,
+    collectTenders,
+    analyzeTender,
+    refresh,
+  } = useTender({ autoFetch: true });
 
-  const [activeSource, setActiveSource] = useState<'all' | 'g2b' | 'ungm' | 'sam' | 'kz'>('all');
-  const [isCollecting, setIsCollecting] = useState(false);
+  const [activeSource, setActiveSource] = useState<'all' | TenderSource>('all');
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
-  const filteredBids = activeSource === 'all'
-    ? bids
-    : bids.filter(b => b.source === activeSource);
-
-  const getSourceLabel = (source: string) => {
-    switch (source) {
-      case 'g2b': return '나라장터';
-      case 'ungm': return 'UN Global';
-      case 'sam': return 'SAM.gov';
-      case 'kz': return 'Kazakhstan';
-      default: return source;
-    }
-  };
+  const filteredTenders =
+    activeSource === 'all' ? tenders : tenders.filter((t) => t.source === activeSource);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-gray-100 text-gray-700';
-      case 'analyzing': return 'bg-yellow-100 text-yellow-700';
-      case 'interested': return 'bg-blue-100 text-blue-700';
-      case 'applied': return 'bg-purple-100 text-purple-700';
-      case 'won': return 'bg-green-100 text-green-700';
-      case 'lost': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'open':
+        return 'bg-green-100 text-green-700';
+      case 'closed':
+        return 'bg-gray-100 text-gray-700';
+      case 'cancelled':
+        return 'bg-red-100 text-red-700';
+      case 'awarded':
+        return 'bg-blue-100 text-blue-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'new': return '신규';
-      case 'analyzing': return '분석중';
-      case 'interested': return '관심';
-      case 'applied': return '제출';
-      case 'won': return '낙찰';
-      case 'lost': return '유찰';
-      default: return status;
+  const getGradeColor = (grade?: string) => {
+    switch (grade) {
+      case 'A':
+        return 'text-green-600 bg-green-50';
+      case 'B':
+        return 'text-blue-600 bg-blue-50';
+      case 'C':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'D':
+        return 'text-orange-600 bg-orange-50';
+      case 'F':
+        return 'text-red-600 bg-red-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
     }
   };
 
-  const formatBudget = (amount: number, currency: string) => {
+  const formatBudget = (amount?: number, currency?: string) => {
+    if (!amount || !currency) return '-';
     if (currency === 'KRW') {
       if (amount >= 100000000) {
         return `${(amount / 100000000).toFixed(1)}억원`;
@@ -112,21 +79,37 @@ export default function TenderPage() {
     }).format(amount);
   };
 
-  const handleCollect = () => {
-    setIsCollecting(true);
-    setTimeout(() => {
-      setBids(prev => [{
-        id: String(Date.now()),
-        source: 'g2b',
-        title: '신규 수집된 입찰 공고',
-        budget: 600000000,
-        currency: 'KRW',
-        deadline: '2024-03-15',
-        status: 'new',
-        fit_score: null,
-      }, ...prev]);
-      setIsCollecting(false);
-    }, 2000);
+  const handleCollect = async () => {
+    const sources: TenderSource[] =
+      activeSource === 'all' ? ['g2b', 'ungm', 'sam', 'kz'] : [activeSource];
+    const result = await collectTenders(sources);
+    if (result) {
+      alert(`수집 완료: ${result.collected}건 (신규 ${result.newRecords}건)`);
+    }
+  };
+
+  const handleAnalyze = async (tenderId: string) => {
+    setAnalyzingId(tenderId);
+    const result = await analyzeTender(tenderId);
+    setAnalyzingId(null);
+    if (result) {
+      alert(`분석 완료: Fit Score ${result.fit_score} (${result.fit_grade}등급)`);
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'open':
+        return '진행중';
+      case 'closed':
+        return '마감';
+      case 'cancelled':
+        return '취소';
+      case 'awarded':
+        return '낙찰';
+      default:
+        return status;
+    }
   };
 
   return (
@@ -139,124 +122,219 @@ export default function TenderPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={refresh}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            새로고침
+          </button>
+          <button
             onClick={handleCollect}
-            disabled={isCollecting}
+            disabled={collecting}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
-            {isCollecting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-600 border-t-transparent"></div>
-                수집 중...
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                입찰 수집
-              </>
-            )}
+            <ArrowPathIcon className={`w-5 h-5 ${collecting ? 'animate-spin' : ''}`} />
+            {collecting ? '수집 중...' : SERVICE_WORDING.tender.collect}
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            문서 생성
+          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <DocumentDuplicateIcon className="w-5 h-5" />
+            {SERVICE_WORDING.tender.generate}
           </button>
         </div>
       </div>
 
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
       {/* Source Filters */}
       <div className="flex items-center gap-2">
+        <FunnelIcon className="w-5 h-5 text-gray-400" />
         {[
-          { key: 'all', label: '전체', count: bids.length },
-          { key: 'g2b', label: '나라장터', count: bids.filter(b => b.source === 'g2b').length },
-          { key: 'ungm', label: 'UN Global', count: bids.filter(b => b.source === 'ungm').length },
-          { key: 'sam', label: 'SAM.gov', count: bids.filter(b => b.source === 'sam').length },
-          { key: 'kz', label: 'Kazakhstan', count: bids.filter(b => b.source === 'kz').length },
-        ].map(source => (
+          { key: 'all', label: '전체', count: tenders.length },
+          {
+            key: 'g2b',
+            label: sourceLabels.g2b,
+            count: tenders.filter((b) => b.source === 'g2b').length,
+          },
+          {
+            key: 'ungm',
+            label: 'UN Global',
+            count: tenders.filter((b) => b.source === 'ungm').length,
+          },
+          { key: 'sam', label: 'SAM.gov', count: tenders.filter((b) => b.source === 'sam').length },
+          {
+            key: 'kz',
+            label: 'Kazakhstan',
+            count: tenders.filter((b) => b.source === 'kz').length,
+          },
+        ].map((source) => (
           <button
             key={source.key}
             onClick={() => setActiveSource(source.key as typeof activeSource)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeSource === source.key
-                ? 'bg-purple-100 text-purple-700'
+                ? 'bg-blue-100 text-blue-700'
                 : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
             {source.label}
-            <span className={`px-2 py-0.5 rounded-full text-xs ${
-              activeSource === source.key ? 'bg-purple-200' : 'bg-gray-100'
-            }`}>
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs ${
+                activeSource === source.key ? 'bg-blue-200' : 'bg-gray-100'
+              }`}
+            >
               {source.count}
             </span>
           </button>
         ))}
       </div>
 
-      {/* Bids Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {filteredBids.map((bid) => (
-          <div
-            key={bid.id}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow"
+      {/* Loading State */}
+      {loading && tenders.length === 0 && (
+        <div className="flex items-center justify-center h-64">
+          <ArrowPathIcon className="h-12 w-12 text-blue-600 animate-spin" />
+        </div>
+      )}
+
+      {/* Tenders Grid */}
+      {filteredTenders.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {filteredTenders.map((tender) => (
+            <div
+              key={tender.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                      {sourceLabels[tender.source as keyof typeof sourceLabels]}
+                    </span>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(tender.status)}`}
+                    >
+                      {getStatusLabel(tender.status)}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 line-clamp-2">{tender.title}</h3>
+                </div>
+                {tender.fit_score !== undefined && tender.fit_score !== null && (
+                  <div className="flex-shrink-0 ml-4">
+                    <div className="w-16 h-16 relative">
+                      <svg className="w-16 h-16 transform -rotate-90">
+                        <circle
+                          cx="32"
+                          cy="32"
+                          r="28"
+                          fill="none"
+                          stroke="#e5e7eb"
+                          strokeWidth="6"
+                        />
+                        <circle
+                          cx="32"
+                          cy="32"
+                          r="28"
+                          fill="none"
+                          stroke={
+                            tender.fit_score >= 85
+                              ? '#22c55e'
+                              : tender.fit_score >= 70
+                                ? '#3b82f6'
+                                : tender.fit_score >= 55
+                                  ? '#eab308'
+                                  : '#ef4444'
+                          }
+                          strokeWidth="6"
+                          strokeDasharray={`${(tender.fit_score / 100) * 176} 176`}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-lg font-bold text-gray-900">{tender.fit_score}</span>
+                        {tender.fit_grade && (
+                          <span
+                            className={`text-xs font-medium px-1.5 py-0.5 rounded ${getGradeColor(tender.fit_grade)}`}
+                          >
+                            {tender.fit_grade}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">예산</span>
+                  <span className="font-medium text-gray-900">
+                    {formatBudget(tender.budget?.amount, tender.budget?.currency)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">마감일</span>
+                  <span className="font-medium text-gray-900">
+                    {new Date(tender.deadline).toLocaleDateString('ko-KR')}
+                  </span>
+                </div>
+                {tender.buyer?.name && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">발주처</span>
+                    <span className="font-medium text-gray-900 truncate max-w-[200px]">
+                      {tender.buyer.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => handleAnalyze(tender.id)}
+                  disabled={analyzing || analyzingId === tender.id}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+                >
+                  {analyzingId === tender.id ? (
+                    <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <MagnifyingGlassIcon className="w-4 h-4" />
+                  )}
+                  {analyzingId === tender.id ? '분석중...' : SERVICE_WORDING.tender.analyze}
+                </button>
+                <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <DocumentTextIcon className="w-4 h-4" />
+                  상세보기
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {filteredTenders.length === 0 && !loading && (
+        <div className="text-center py-12 bg-gray-50 rounded-xl">
+          <DocumentTextIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">해당 소스의 입찰 공고가 없습니다</p>
+          <button
+            onClick={handleCollect}
+            disabled={collecting}
+            className="mt-4 px-4 py-2 text-sm text-blue-600 hover:text-blue-700"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                    {getSourceLabel(bid.source)}
-                  </span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(bid.status)}`}>
-                    {getStatusLabel(bid.status)}
-                  </span>
-                </div>
-                <h3 className="font-semibold text-gray-900 line-clamp-2">{bid.title}</h3>
-              </div>
-              {bid.fit_score !== null && (
-                <div className="flex-shrink-0 w-14 h-14 relative">
-                  <svg className="w-14 h-14 transform -rotate-90">
-                    <circle cx="28" cy="28" r="24" fill="none" stroke="#e5e7eb" strokeWidth="5" />
-                    <circle
-                      cx="28"
-                      cy="28"
-                      r="24"
-                      fill="none"
-                      stroke={bid.fit_score >= 80 ? '#22c55e' : bid.fit_score >= 60 ? '#eab308' : '#ef4444'}
-                      strokeWidth="5"
-                      strokeDasharray={`${(bid.fit_score / 100) * 151} 151`}
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
-                    {bid.fit_score}
-                  </span>
-                </div>
-              )}
-            </div>
+            {collecting ? '수집 중...' : '입찰 수집하기'}
+          </button>
+        </div>
+      )}
 
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500">예산</span>
-                <span className="font-medium text-gray-900">{formatBudget(bid.budget, bid.currency)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500">마감일</span>
-                <span className="font-medium text-gray-900">
-                  {new Date(bid.deadline).toLocaleDateString('ko-KR')}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
-              <button className="flex-1 px-3 py-2 text-sm font-medium text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                분석하기
-              </button>
-              <button className="flex-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                상세보기
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Brand Footer */}
+      <div className="text-center text-sm text-gray-400">
+        <p className="font-medium text-blue-600">{BRAND.name}</p>
+        <p>
+          {BRAND.slogan} — {BRAND.tagline}
+        </p>
       </div>
     </div>
   );

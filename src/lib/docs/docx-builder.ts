@@ -121,7 +121,7 @@ export class DocxBuilder {
             text: title,
             bold: true,
             size: 56, // 28pt
-            color: '9333ea', // Qetta purple
+            color: '2563eb', // Qetta blue (Salient)
           }),
         ],
         alignment: AlignmentType.CENTER,
@@ -301,10 +301,14 @@ export class DocxBuilder {
     // 이미지
     if (section.image && fs.existsSync(section.image.path)) {
       const imageData = fs.readFileSync(section.image.path);
+      const ext = section.image.path.toLowerCase().split('.').pop() || 'png';
+      const imageType = ext === 'jpeg' ? 'jpg' : ext;
+
       this.sections.push(
         new Paragraph({
           children: [
             new ImageRun({
+              type: imageType as 'png' | 'jpg' | 'gif' | 'bmp',
               data: imageData,
               transformation: {
                 width: section.image.width || 400,

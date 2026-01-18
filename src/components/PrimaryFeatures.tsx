@@ -1,41 +1,66 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react'
 import clsx from 'clsx'
 
 import { Container } from '@/components/Container'
-import backgroundImage from '@/images/background-features.jpg'
-import screenshotExpenses from '@/images/screenshots/expenses.png'
-import screenshotPayroll from '@/images/screenshots/payroll.png'
-import screenshotReporting from '@/images/screenshots/reporting.png'
-import screenshotVatReturns from '@/images/screenshots/vat-returns.png'
+import { BRAND, SERVICE_WORDING } from '@/lib/brand'
+import {
+  ArchiveBoxIcon,
+  CpuChipIcon,
+  DocumentTextIcon,
+  WrenchScrewdriverIcon,
+} from '@heroicons/react/24/outline'
 
 const features = [
   {
-    title: 'Payroll',
+    title: 'OTT Chip',
+    titleKo: 'OTT칩',
     description:
-      "Keep track of everyone's salaries and whether or not they've been paid. Direct deposit not supported.",
-    image: screenshotPayroll,
+      '10분 설치, 50만원. 플러그앤플레이 방식으로 기존 설비에 바로 연결됩니다. MES 대비 99% 비용 절감으로 중소 제조기업도 스마트팩토리를 시작할 수 있습니다.',
+    icon: WrenchScrewdriverIcon,
+    stats: [
+      { label: '설치 시간', value: '10분' },
+      { label: '비용', value: '50만원' },
+      { label: 'MES 대비', value: '-99%' },
+    ],
   },
   {
-    title: 'Claim expenses',
+    title: 'AI Predictive',
+    titleKo: 'AI 예지보전',
     description:
-      "All of your receipts organized into one place, as long as you don't mind typing in the data by hand.",
-    image: screenshotExpenses,
+      '72시간 전 고장 예측. 설비 데이터를 실시간 분석하여 고장과 불량을 미리 예측합니다. 갑작스런 라인 정지를 80% 줄이고, 불량률을 30% 감소시킵니다.',
+    icon: CpuChipIcon,
+    stats: [
+      { label: '예측 시점', value: '72h 전' },
+      { label: '정지 감소', value: '-80%' },
+      { label: '불량 감소', value: '-30%' },
+    ],
   },
   {
-    title: 'VAT handling',
+    title: SERVICE_WORDING.evidenceRegistry.name,
+    titleKo: SERVICE_WORDING.evidenceRegistry.nameKo,
     description:
-      "We only sell our software to companies who don't deal with VAT at all, so technically we do all the VAT stuff they need.",
-    image: screenshotVatReturns,
+      'Gov ZIP 패키지로 변조 탐지 가능한 증빙을 자동 생성합니다. MANIFEST v1.2 표준으로 정부 제출 서류의 신뢰성을 보장하고, 감사 시 즉시 검증 가능합니다.',
+    icon: ArchiveBoxIcon,
+    stats: [
+      { label: '포맷', value: 'Gov ZIP' },
+      { label: '표준', value: 'v1.2' },
+      { label: '보안', value: '변조 탐지' },
+    ],
   },
   {
-    title: 'Reporting',
+    title: SERVICE_WORDING.documentSkills.name,
+    titleKo: SERVICE_WORDING.documentSkills.nameKo,
     description:
-      'Easily export your data into an Excel spreadsheet where you can do whatever the hell you want with it.',
-    image: screenshotReporting,
+      '제안서, 견적서, 발표자료를 AI가 자동 생성합니다. DOCX, XLSX, PPTX 형식으로 바로 활용 가능하며, 입찰 공고에 맞춤 최적화된 문서를 몇 분 만에 완성합니다.',
+    icon: DocumentTextIcon,
+    stats: [
+      { label: '제안서', value: 'DOCX' },
+      { label: '견적서', value: 'XLSX' },
+      { label: '발표자료', value: 'PPTX' },
+    ],
   },
 ]
 
@@ -62,25 +87,19 @@ export function PrimaryFeatures() {
   return (
     <section
       id="features"
-      aria-label="Features for running your books"
+      aria-label="Qetta 핵심 기능"
       className="relative overflow-hidden bg-blue-600 pt-20 pb-28 sm:py-32"
     >
-      <Image
-        className="absolute top-1/2 left-1/2 max-w-none translate-x-[-44%] translate-y-[-42%]"
-        src={backgroundImage}
-        alt=""
-        width={2245}
-        height={1636}
-        unoptimized
-      />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900" />
       <Container className="relative">
         <div className="max-w-2xl md:mx-auto md:text-center xl:max-w-none">
           <h2 className="font-display text-3xl tracking-tight text-white sm:text-4xl md:text-5xl">
-            Everything you need to run your books.
+            제조 데이터에서 정부 증빙까지
           </h2>
           <p className="mt-6 text-lg tracking-tight text-blue-100">
-            Well everything you need if you aren’t that picky about minor
-            details like tax compliance.
+            {BRAND.tagline}
+            <br />
+            AI가 자동으로 처리하는 완전한 파이프라인
           </p>
         </div>
         <TabGroup
@@ -111,7 +130,7 @@ export function PrimaryFeatures() {
                           )}
                         >
                           <span className="absolute inset-0 rounded-full lg:rounded-l-xl lg:rounded-r-none" />
-                          {feature.title}
+                          {feature.titleKo}
                         </Tab>
                       </h3>
                       <p
@@ -137,14 +156,33 @@ export function PrimaryFeatures() {
                         {feature.description}
                       </p>
                     </div>
-                    <div className="mt-10 w-180 overflow-hidden rounded-xl bg-slate-50 shadow-xl shadow-blue-900/20 sm:w-auto lg:mt-0 lg:w-271.25">
-                      <Image
-                        className="w-full"
-                        src={feature.image}
-                        alt=""
-                        priority
-                        sizes="(min-width: 1024px) 67.8125rem, (min-width: 640px) 100vw, 45rem"
-                      />
+                    <div className="mt-10 overflow-hidden rounded-xl bg-white/10 p-8 shadow-xl shadow-blue-900/20 sm:p-12 lg:mt-0">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="mb-6 rounded-2xl bg-white/20 p-4">
+                          <feature.icon className="h-12 w-12 text-white" />
+                        </div>
+                        <h4 className="text-2xl font-bold text-white mb-2">
+                          {feature.title}
+                        </h4>
+                        <p className="text-blue-100 mb-8 max-w-md">
+                          {feature.titleKo}
+                        </p>
+                        <div className="grid grid-cols-3 gap-4 w-full max-w-sm">
+                          {feature.stats.map((stat) => (
+                            <div
+                              key={stat.label}
+                              className="rounded-lg bg-white/10 p-4"
+                            >
+                              <div className="text-2xl font-bold text-white">
+                                {stat.value}
+                              </div>
+                              <div className="text-xs text-blue-200 mt-1">
+                                {stat.label}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </TabPanel>
                 ))}

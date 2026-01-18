@@ -1,9 +1,23 @@
 /**
  * Next.js Middleware
- * Handles request tracing, security headers, and CSP nonce generation
+ * Handles authentication, route protection, security headers, and CSP
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+
+// Route configuration
+const PROTECTED_ROUTES = ['/dashboard'];
+const DEV_ROUTES = ['/dashboard/dev'];
+const ADMIN_ROUTES = ['/dashboard/admin'];
+const AUTH_ROUTES = ['/login', '/register'];
+
+/**
+ * Check if path matches any of the routes
+ */
+function matchesRoute(path: string, routes: string[]): boolean {
+  return routes.some((route) => path === route || path.startsWith(route + '/'));
+}
 
 /**
  * Generate a cryptographically secure nonce for CSP
@@ -104,13 +118,87 @@ function getSecurityHeaders(nonce: string): Record<string, string> {
   };
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Generate request ID and nonce
   const requestId = request.headers.get('x-request-id') || generateRequestId();
   const nonce = generateNonce();
 
-  // Get the response
-  const response = NextResponse.next();
+  // Create initial response
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  // Create Supabase client for auth check
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  // Get current user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const path = request.nextUrl.pathname;
+
+  // Route protection logic
+  if (matchesRoute(path, PROTECTED_ROUTES)) {
+    // Not authenticated - redirect to login
+    if (!user) {
+      const redirectUrl = new URL('/login', request.url);
+      redirectUrl.searchParams.set('redirect', path);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Check role-based access
+    if (matchesRoute(path, DEV_ROUTES) || matchesRoute(path, ADMIN_ROUTES)) {
+      // Get user profile for role check
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('system_role')
+        .eq('id', user.id)
+        .single();
+
+      const role = profile?.system_role || 'user';
+
+      // Developer routes require developer or admin
+      if (matchesRoute(path, DEV_ROUTES) && !['developer', 'admin'].includes(role)) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+
+      // Admin routes require admin only
+      if (matchesRoute(path, ADMIN_ROUTES) && role !== 'admin') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    }
+  }
+
+  // Redirect authenticated users away from auth pages
+  if (matchesRoute(path, AUTH_ROUTES) && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
 
   // Add request ID to response headers
   response.headers.set('x-request-id', requestId);
