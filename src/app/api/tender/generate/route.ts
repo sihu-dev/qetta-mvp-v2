@@ -3,6 +3,7 @@
  * /api/tender/generate
  *
  * Generate proposal documents (DOCX, XLSX, PPTX)
+ * Supports both manual data input and automatic generation from bid analysis
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,16 +11,34 @@ import { createServerClient } from '@/lib/supabase';
 import { DocxBuilder, type DocxContent } from '@/lib/docs/docx-builder';
 import { PptxBuilder, type ProposalPptData } from '@/lib/docs/pptx-builder';
 import { XlsxBuilder, type QuotationData } from '@/lib/docs/xlsx-builder';
-import type { DocumentType, DocumentFormat } from '@/lib/tender/types';
+import {
+  generateBidDocuments,
+  type BidDocumentInput,
+} from '@/lib/docs/bid-document-generator';
+import {
+  analyzeBid,
+  calculateFitScore,
+  analyzeCompetitors,
+  type CompanyProfile,
+} from '@/lib/tender/analyzers';
+import type { Bid, DocumentType, DocumentFormat } from '@/lib/tender/types';
 import * as path from 'path';
+import * as os from 'os';
 import { metrics } from '@/lib/metrics';
+import { logger } from '@/lib/logging';
 
 export interface GenerateRequest {
   bidId?: string;
   orgId: string;
-  docType: DocumentType;
-  format: DocumentFormat;
-  data: {
+  docType?: DocumentType;
+  format?: DocumentFormat;
+  // Auto-generate mode (from bid analysis)
+  autoGenerate?: boolean;
+  documentTypes?: ('proposal' | 'quotation' | 'presentation')[];
+  companyProfile?: CompanyProfile;
+  returnBuffer?: boolean;
+  // Manual mode
+  data?: {
     title: string;
     company: {
       name: string;
@@ -44,6 +63,9 @@ export interface GenerateRequest {
 
 /**
  * POST /api/tender/generate - Generate a document
+ * Supports two modes:
+ * 1. autoGenerate: true - Generate from bid analysis (bidId required)
+ * 2. Manual mode - Provide data directly
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -51,21 +73,186 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: GenerateRequest = await request.json();
-    const { bidId, orgId, docType, format, data } = body;
+    const {
+      bidId,
+      orgId,
+      autoGenerate,
+      documentTypes,
+      companyProfile,
+      returnBuffer,
+      docType,
+      format,
+      data,
+    } = body;
 
-    if (!orgId || !docType || !format || !data) {
+    if (!orgId) {
+      statusCode = 400;
+      return NextResponse.json({ error: 'Missing required field: orgId' }, { status: 400 });
+    }
+
+    const supabase = createServerClient();
+
+    // ═══════════════════════════════════════════════════════════
+    // Auto-generate mode: Generate from bid analysis
+    // ═══════════════════════════════════════════════════════════
+    if (autoGenerate) {
+      if (!bidId) {
+        statusCode = 400;
+        return NextResponse.json(
+          { error: 'bidId is required for auto-generate mode' },
+          { status: 400 }
+        );
+      }
+
+      logger.info('Auto-generating documents from bid analysis', { bidId, orgId });
+
+      // Fetch the bid
+      const { data: bid, error: bidError } = await supabase
+        .from('bids')
+        .select('*')
+        .eq('id', bidId)
+        .single();
+
+      if (bidError) throw bidError;
+      if (!bid) {
+        statusCode = 404;
+        return NextResponse.json({ error: 'Bid not found' }, { status: 404 });
+      }
+
+      // Default company profile
+      const profile: CompanyProfile = companyProfile || {
+        business_number: '123-45-67890',
+        company_name: 'Demo Company',
+        certifications: ['ISO9001', 'ISO27001', '중소기업'],
+        experience_years: 5,
+        past_wins: 10,
+        revenue: 5000000000,
+        employee_count: 30,
+        specializations: ['스마트팩토리', 'IoT', '데이터분석'],
+      };
+
+      // Convert to typed Bid
+      const typedBid: Bid = {
+        id: bid.id,
+        org_id: bid.org_id,
+        source: bid.source,
+        external_id: bid.external_id,
+        title: bid.title,
+        description: bid.description,
+        budget: bid.budget,
+        currency: bid.currency,
+        deadline: bid.deadline,
+        status: bid.status,
+        fit_score: bid.fit_score,
+        raw_data: bid.raw_data,
+        created_at: bid.created_at,
+        updated_at: bid.updated_at,
+      };
+
+      // Run analysis
+      const analysis = await analyzeBid(typedBid, profile);
+      const fitScore = calculateFitScore(typedBid, profile, analysis);
+      const competitorAnalysis = await analyzeCompetitors(typedBid);
+
+      // Prepare document input
+      const docInput: BidDocumentInput = {
+        bid: typedBid,
+        analysis,
+        fitScore,
+        competitorAnalysis,
+        companyProfile: profile,
+      };
+
+      // Output directory
+      const outputDir = path.join(os.tmpdir(), 'qetta-docs', bidId);
+
+      // Generate documents
+      const types = documentTypes || ['proposal', 'quotation', 'presentation'];
+      const results = await generateBidDocuments(docInput, {
+        outputDir,
+        generateProposal: types.includes('proposal'),
+        generateQuotation: types.includes('quotation'),
+        generatePresentation: types.includes('presentation'),
+      });
+
+      // Prepare response
+      const response: {
+        success: boolean;
+        mode: string;
+        documents: typeof results;
+        summary: {
+          bidId: string;
+          bidTitle: string;
+          fitScore: number;
+          fitGrade: string;
+          generatedAt: string;
+          outputDir: string;
+        };
+        buffers?: Record<string, string>;
+        metadata: {
+          executionTime: number;
+        };
+      } = {
+        success: true,
+        mode: 'auto-generate',
+        documents: results,
+        summary: {
+          bidId,
+          bidTitle: typedBid.title,
+          fitScore: fitScore.overall,
+          fitGrade: fitScore.grade,
+          generatedAt: new Date().toISOString(),
+          outputDir,
+        },
+        metadata: {
+          executionTime: Date.now() - startTime,
+        },
+      };
+
+      // Optionally include base64 buffers
+      if (returnBuffer) {
+        response.buffers = {};
+        const fs = await import('fs');
+
+        if (results.proposal?.success && results.proposal.filePath) {
+          const buffer = fs.readFileSync(results.proposal.filePath);
+          response.buffers.proposal = buffer.toString('base64');
+        }
+        if (results.quotation?.success && results.quotation.filePath) {
+          const buffer = fs.readFileSync(results.quotation.filePath);
+          response.buffers.quotation = buffer.toString('base64');
+        }
+        if (results.presentation?.success && results.presentation.filePath) {
+          const buffer = fs.readFileSync(results.presentation.filePath);
+          response.buffers.presentation = buffer.toString('base64');
+        }
+      }
+
+      logger.info('Auto-generate completed', {
+        bidId,
+        proposal: results.proposal?.success,
+        quotation: results.quotation?.success,
+        presentation: results.presentation?.success,
+      });
+
+      return NextResponse.json(response);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Manual mode: Generate from provided data
+    // ═══════════════════════════════════════════════════════════
+    if (!docType || !format || !data) {
       statusCode = 400;
       return NextResponse.json(
-        { error: 'Missing required fields: orgId, docType, format, data' },
+        { error: 'Missing required fields: docType, format, data (or use autoGenerate: true)' },
         { status: 400 }
       );
     }
 
-    const supabase = createServerClient();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const outputDir = `/tmp/qetta/documents/${orgId}`;
+    const manualOutputDir = `/tmp/qetta/documents/${orgId}`;
     const filename = `${docType}_${timestamp}`;
-    const outputPath = path.join(outputDir, filename);
+    const outputPath = path.join(manualOutputDir, filename);
 
     let result;
 

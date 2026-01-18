@@ -16,6 +16,16 @@ export { DocxBuilder, type DocxContent, type DocxSection } from './docx-builder'
 export { XlsxBuilder, type QuotationData, type QuotationItem } from './xlsx-builder';
 export { PptxBuilder, type ProposalPptData, type PptSection, type ContactInfo } from './pptx-builder';
 
+// Bid Document Generator - 분석 결과 → 문서 통합
+export {
+  generateBidDocuments,
+  generateProposalDocument,
+  generateQuotationDocument,
+  generatePresentationDocument,
+  type BidDocumentInput,
+  type GeneratedDocuments,
+} from './bid-document-generator';
+
 // ═══════════════════════════════════════════════════════════
 // 공통 타입
 // ═══════════════════════════════════════════════════════════
