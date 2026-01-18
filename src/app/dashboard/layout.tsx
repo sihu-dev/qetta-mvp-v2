@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -81,13 +82,15 @@ export default function DashboardLayout({
   const { user } = useAuth();
   const userRole = user?.profile?.system_role || 'user';
 
-  // Filter navigation items based on user role
-  const filteredNavigation = navigation.filter((item) => {
-    if (!item.roles) return true; // Show to all if no roles specified
-    if (item.roles.includes('developer') && isDeveloper(userRole)) return true;
-    if (item.roles.includes('admin') && isAdmin(userRole)) return true;
-    return item.roles.includes(userRole);
-  });
+  // Memoized filter navigation items based on user role
+  const filteredNavigation = useMemo(() => {
+    return navigation.filter((item) => {
+      if (!item.roles) return true; // Show to all if no roles specified
+      if (item.roles.includes('developer') && isDeveloper(userRole)) return true;
+      if (item.roles.includes('admin') && isAdmin(userRole)) return true;
+      return item.roles.includes(userRole);
+    });
+  }, [userRole]);
 
   return (
     <div className="min-h-screen bg-gray-50">

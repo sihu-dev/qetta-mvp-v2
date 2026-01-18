@@ -171,14 +171,25 @@ export interface TenderCollectResponse {
   updatedRecords: number;
 }
 
+/**
+ * Company Profile for Tender Analysis
+ */
+export interface TenderCompanyProfile {
+  name: string;
+  business_number?: string;
+  expertise?: string[];
+  experience?: string[];
+  certifications?: string[];
+  experience_years?: number;
+  past_wins?: number;
+  revenue?: number;
+  employee_count?: number;
+  specializations?: string[];
+}
+
 export interface TenderAnalyzeRequest {
   tenderId: string;
-  companyProfile?: {
-    name: string;
-    expertise?: string[];
-    experience?: string[];
-    certifications?: string[];
-  };
+  companyProfile?: TenderCompanyProfile;
 }
 
 // ============================================================

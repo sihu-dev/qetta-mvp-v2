@@ -160,7 +160,8 @@ export class AuditLogger {
       const supabase = await createClient();
 
       // audit_logs 테이블에 배치 삽입
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('audit_logs')
         .insert(entries.map((e) => ({
           user_id: e.userId,
@@ -197,7 +198,7 @@ export class AuditLogger {
       const supabase = await createClient();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase
+      let query: any = (supabase as any)
         .from('audit_logs')
         .select('*')
         .order('created_at', { ascending: false });

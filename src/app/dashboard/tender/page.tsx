@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   ArrowPathIcon,
@@ -30,42 +30,51 @@ export default function TenderPage() {
   const [activeSource, setActiveSource] = useState<'all' | TenderSource>('all');
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
-  const filteredTenders =
-    activeSource === 'all' ? tenders : tenders.filter((t) => t.source === activeSource);
+  // Memoized filtered tenders
+  const filteredTenders = useMemo(
+    () => (activeSource === 'all' ? tenders : tenders.filter((t) => t.source === activeSource)),
+    [tenders, activeSource]
+  );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'bg-green-100 text-green-700';
-      case 'closed':
-        return 'bg-gray-100 text-gray-700';
-      case 'cancelled':
-        return 'bg-red-100 text-red-700';
-      case 'awarded':
-        return 'bg-blue-100 text-blue-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
+  // Memoized source filter buttons
+  const sourceFilters = useMemo(() => [
+    { key: 'all' as const, label: '전체', count: tenders.length },
+    { key: 'g2b' as const, label: sourceLabels.g2b, count: tenders.filter((b) => b.source === 'g2b').length },
+    { key: 'ungm' as const, label: 'UN Global', count: tenders.filter((b) => b.source === 'ungm').length },
+    { key: 'sam' as const, label: 'SAM.gov', count: tenders.filter((b) => b.source === 'sam').length },
+    { key: 'kz' as const, label: 'Kazakhstan', count: tenders.filter((b) => b.source === 'kz').length },
+  ], [tenders]);
+
+  // Status color mapping (constant - no need for function recreation)
+  const statusColors: Record<string, string> = {
+    open: 'bg-green-100 text-green-700',
+    closed: 'bg-gray-100 text-gray-700',
+    cancelled: 'bg-red-100 text-red-700',
+    awarded: 'bg-blue-100 text-blue-700',
   };
+  const getStatusColor = (status: string) => statusColors[status] || 'bg-gray-100 text-gray-700';
 
-  const getGradeColor = (grade?: string) => {
-    switch (grade) {
-      case 'A':
-        return 'text-green-600 bg-green-50';
-      case 'B':
-        return 'text-blue-600 bg-blue-50';
-      case 'C':
-        return 'text-yellow-600 bg-yellow-50';
-      case 'D':
-        return 'text-orange-600 bg-orange-50';
-      case 'F':
-        return 'text-red-600 bg-red-50';
-      default:
-        return 'text-gray-600 bg-gray-50';
-    }
+  // Grade color mapping (constant)
+  const gradeColors: Record<string, string> = {
+    A: 'text-green-600 bg-green-50',
+    B: 'text-blue-600 bg-blue-50',
+    C: 'text-yellow-600 bg-yellow-50',
+    D: 'text-orange-600 bg-orange-50',
+    F: 'text-red-600 bg-red-50',
   };
+  const getGradeColor = (grade?: string) => (grade ? gradeColors[grade] : 'text-gray-600 bg-gray-50') || 'text-gray-600 bg-gray-50';
 
-  const formatBudget = (amount?: number, currency?: string) => {
+  // Status label mapping (constant)
+  const statusLabels: Record<string, string> = {
+    open: '진행중',
+    closed: '마감',
+    cancelled: '취소',
+    awarded: '낙찰',
+  };
+  const getStatusLabel = (status: string) => statusLabels[status] || status;
+
+  // Memoized budget formatter
+  const formatBudget = useCallback((amount?: number, currency?: string) => {
     if (!amount || !currency) return '-';
     if (currency === 'KRW') {
       if (amount >= 100000000) {
@@ -78,40 +87,27 @@ export default function TenderPage() {
       currency,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
+  }, []);
 
-  const handleCollect = async () => {
+  // Memoized collect handler
+  const handleCollect = useCallback(async () => {
     const sources: TenderSource[] =
       activeSource === 'all' ? ['g2b', 'ungm', 'sam', 'kz'] : [activeSource];
     const result = await collectTenders(sources);
     if (result) {
       alert(`수집 완료: ${result.collected}건 (신규 ${result.newRecords}건)`);
     }
-  };
+  }, [activeSource, collectTenders]);
 
-  const handleAnalyze = async (tenderId: string) => {
+  // Memoized analyze handler
+  const handleAnalyze = useCallback(async (tenderId: string) => {
     setAnalyzingId(tenderId);
     const result = await analyzeTender(tenderId);
     setAnalyzingId(null);
     if (result) {
       alert(`분석 완료: Fit Score ${result.fit_score} (${result.fit_grade}등급)`);
     }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'open':
-        return '진행중';
-      case 'closed':
-        return '마감';
-      case 'cancelled':
-        return '취소';
-      case 'awarded':
-        return '낙찰';
-      default:
-        return status;
-    }
-  };
+  }, [analyzeTender]);
 
   return (
     <div className="space-y-8">
@@ -155,25 +151,7 @@ export default function TenderPage() {
       {/* Source Filters */}
       <div className="flex items-center gap-2">
         <FunnelIcon className="w-5 h-5 text-gray-400" />
-        {[
-          { key: 'all', label: '전체', count: tenders.length },
-          {
-            key: 'g2b',
-            label: sourceLabels.g2b,
-            count: tenders.filter((b) => b.source === 'g2b').length,
-          },
-          {
-            key: 'ungm',
-            label: 'UN Global',
-            count: tenders.filter((b) => b.source === 'ungm').length,
-          },
-          { key: 'sam', label: 'SAM.gov', count: tenders.filter((b) => b.source === 'sam').length },
-          {
-            key: 'kz',
-            label: 'Kazakhstan',
-            count: tenders.filter((b) => b.source === 'kz').length,
-          },
-        ].map((source) => (
+        {sourceFilters.map((source) => (
           <button
             key={source.key}
             onClick={() => setActiveSource(source.key as typeof activeSource)}

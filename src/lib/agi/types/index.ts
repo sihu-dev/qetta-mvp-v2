@@ -13,22 +13,46 @@ export interface AGIModule {
   execute(context: ExecutionContext): Promise<ModuleResult>;
 }
 
+/**
+ * Execution Configuration - AGI 모듈 실행 설정
+ */
+export interface ExecutionConfig {
+  maxTokens?: number;
+  temperature?: number;
+  timeout?: number;
+  retryCount?: number;
+  confidenceThreshold?: number;
+  enableCaching?: boolean;
+  model?: string;
+  tierOverride?: Tier;
+}
+
 export interface ExecutionContext {
   orgId: string;
   userId: string;
   input: unknown;
-  config?: Record<string, unknown>;
+  config?: ExecutionConfig;
+}
+
+/**
+ * Module Result Metadata - AGI 모듈 실행 결과 메타데이터
+ */
+export interface ModuleResultMetadata {
+  executionTime: number;
+  tokensUsed?: number;
+  tier: Tier;
+  cached?: boolean;
+  modelUsed?: string;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalCost?: number;
 }
 
 export interface ModuleResult {
   success: boolean;
   data?: unknown;
   error?: string;
-  metadata?: {
-    executionTime: number;
-    tokensUsed?: number;
-    tier: Tier;
-  };
+  metadata?: ModuleResultMetadata;
 }
 
 export type Tier = 'rule' | 'ml' | 'claude';
@@ -36,6 +60,30 @@ export type Tier = 'rule' | 'ml' | 'claude';
 // ═══════════════════════════════════════════════════════════
 // Event & Action 타입 (SSOT)
 // ═══════════════════════════════════════════════════════════
+
+/**
+ * Event Metadata - 이벤트 관련 추가 정보
+ */
+export interface EventMetadata {
+  sensorId?: string;
+  sensorType?: string;
+  measurementValue?: number;
+  measurementUnit?: string;
+  threshold?: {
+    min?: number;
+    max?: number;
+    warning?: number;
+    critical?: number;
+  };
+  location?: {
+    zone?: string;
+    line?: string;
+    station?: string;
+  };
+  correlatedEvents?: string[];
+  tags?: string[];
+  [key: string]: unknown;
+}
 
 export interface Event {
   id: string;
@@ -46,7 +94,7 @@ export interface Event {
   alarm_active: boolean;
   alarm_code: string | null;
   source: 'sensor' | 'plc' | 'manual' | 'csv_import';
-  metadata?: Record<string, unknown>;
+  metadata?: EventMetadata;
 }
 
 export interface Action {

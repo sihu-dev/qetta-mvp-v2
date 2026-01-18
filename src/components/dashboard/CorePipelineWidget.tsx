@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import {
   CpuChipIcon,
@@ -67,7 +68,7 @@ const pipelineSteps: PipelineStep[] = [
   },
 ];
 
-function ArrowConnector() {
+const ArrowConnector = memo(function ArrowConnector() {
   return (
     <div className="hidden md:flex items-center justify-center px-2">
       <svg
@@ -88,9 +89,11 @@ function ArrowConnector() {
       </svg>
     </div>
   );
-}
+});
 
-function MobileArrowConnector() {
+ArrowConnector.displayName = 'ArrowConnector';
+
+const MobileArrowConnector = memo(function MobileArrowConnector() {
   return (
     <div className="flex md:hidden items-center justify-center py-2">
       <svg
@@ -111,9 +114,11 @@ function MobileArrowConnector() {
       </svg>
     </div>
   );
-}
+});
 
-export default function CorePipelineWidget() {
+MobileArrowConnector.displayName = 'MobileArrowConnector';
+
+const CorePipelineWidget = memo(function CorePipelineWidget() {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <div className="mb-6">
@@ -207,4 +212,8 @@ export default function CorePipelineWidget() {
       </div>
     </div>
   );
-}
+});
+
+CorePipelineWidget.displayName = 'CorePipelineWidget';
+
+export default CorePipelineWidget;

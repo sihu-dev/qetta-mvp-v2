@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useProposalSections } from '@/lib/hooks';
 import { SectionCard } from './SectionCard';
 import { DocumentDownload } from './DocumentDownload';
@@ -54,12 +54,12 @@ export function ProposalAIEditor({
   const { state, generateAll, regenerateSection, getSectionStatus } = useProposalSections();
   const [expandedSections, setExpandedSections] = useState<Set<ProposalSectionType>>(new Set(['UNDERSTANDING']));
 
-  const handleGenerateAll = async () => {
+  const handleGenerateAll = useCallback(async () => {
     await generateAll(analysisResult, matchResult, companyProfile);
     onGenerate?.();
-  };
+  }, [generateAll, analysisResult, matchResult, companyProfile, onGenerate]);
 
-  const handleToggleSection = (type: ProposalSectionType) => {
+  const handleToggleSection = useCallback((type: ProposalSectionType) => {
     setExpandedSections((prev) => {
       const next = new Set(prev);
       if (next.has(type)) {
@@ -69,11 +69,11 @@ export function ProposalAIEditor({
       }
       return next;
     });
-  };
+  }, []);
 
-  const handleRegenerate = async (type: ProposalSectionType, feedback?: string) => {
+  const handleRegenerate = useCallback(async (type: ProposalSectionType, feedback?: string) => {
     await regenerateSection(type, feedback);
-  };
+  }, [regenerateSection]);
 
   return (
     <div className="space-y-6">

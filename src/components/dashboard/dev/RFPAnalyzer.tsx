@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRFPAnalysis } from '@/lib/hooks';
 import { AnalysisProgress } from './AnalysisProgress';
 import { HiddenNeedsCard } from './HiddenNeedsCard';
@@ -31,7 +31,7 @@ export function RFPAnalyzer({ rfpDocument, onAnalysisComplete }: RFPAnalyzerProp
   const [clientType, setClientType] = useState<ClientType>('SME_MANUFACTURER');
   const [rfpText, setRfpText] = useState('');
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = useCallback(async () => {
     const doc: RFPDocument = rfpDocument || {
       id: `rfp-${Date.now()}`,
       title: '분석 대상 RFP',
@@ -44,7 +44,7 @@ export function RFPAnalyzer({ rfpDocument, onAnalysisComplete }: RFPAnalyzerProp
     if (result && onAnalysisComplete) {
       onAnalysisComplete(result);
     }
-  };
+  }, [rfpDocument, rfpText, analyze, clientType, onAnalysisComplete]);
 
   return (
     <div className="space-y-6">

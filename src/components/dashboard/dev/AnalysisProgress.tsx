@@ -5,6 +5,7 @@
 
 'use client';
 
+import { memo } from 'react';
 import type { AnalysisPhase, LayerProgress } from '@/lib/hooks';
 
 // =============================================================================
@@ -33,7 +34,7 @@ const LAYERS = [
 // 컴포넌트
 // =============================================================================
 
-export function AnalysisProgress({ phase, progress, getPhaseLabel }: AnalysisProgressProps) {
+export const AnalysisProgress = memo(function AnalysisProgress({ phase, progress, getPhaseLabel }: AnalysisProgressProps) {
   return (
     <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="mb-4">
@@ -121,6 +122,8 @@ export function AnalysisProgress({ phase, progress, getPhaseLabel }: AnalysisPro
       )}
     </div>
   );
-}
+});
+
+AnalysisProgress.displayName = 'AnalysisProgress';
 
 export default AnalysisProgress;

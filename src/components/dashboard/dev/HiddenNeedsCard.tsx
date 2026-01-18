@@ -5,6 +5,7 @@
 
 'use client';
 
+import { memo } from 'react';
 import type { HiddenNeed } from '@/lib/bizsupport/types';
 
 // =============================================================================
@@ -35,7 +36,7 @@ function getConfidenceLabel(confidence: number): string {
 // 컴포넌트
 // =============================================================================
 
-export function HiddenNeedsCard({ hiddenNeeds }: HiddenNeedsCardProps) {
+export const HiddenNeedsCard = memo(function HiddenNeedsCard({ hiddenNeeds }: HiddenNeedsCardProps) {
   if (hiddenNeeds.length === 0) {
     return (
       <div className="rounded-xl bg-slate-50 p-6 text-center">
@@ -108,6 +109,8 @@ export function HiddenNeedsCard({ hiddenNeeds }: HiddenNeedsCardProps) {
       </div>
     </div>
   );
-}
+});
+
+HiddenNeedsCard.displayName = 'HiddenNeedsCard';
 
 export default HiddenNeedsCard;

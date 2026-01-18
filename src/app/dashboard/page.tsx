@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import {
   ChartBarIcon,
@@ -31,47 +32,69 @@ const typeIcons = {
   bid: DocumentTextIcon,
 };
 
+// Status color mappings (defined outside component for stability)
+const STATUS_COLORS: Record<string, string> = {
+  running: 'bg-green-100 text-green-700',
+  completed: 'bg-blue-100 text-blue-700',
+  analyzing: 'bg-yellow-100 text-yellow-700',
+  error: 'bg-red-100 text-red-700',
+};
+
+const HEALTH_STATUS_COLORS: Record<string, string> = {
+  healthy: 'text-green-600',
+  degraded: 'text-yellow-600',
+  unhealthy: 'text-red-600',
+};
+
+const getStatusColor = (status?: string) =>
+  status ? STATUS_COLORS[status] || 'bg-gray-100 text-gray-700' : 'bg-gray-100 text-gray-700';
+
+const getHealthStatusColor = (status?: string) =>
+  status ? HEALTH_STATUS_COLORS[status] || 'text-red-600' : 'text-red-600';
+
 export default function DashboardPage() {
   const { metrics, health, loading, error, refreshAll, lastUpdated } = useDashboard({
     autoFetch: true,
     refreshInterval: 30000, // Refresh every 30 seconds
   });
 
-  // Generate recent activities from metrics
-  const activities: RecentActivity[] = metrics
-    ? [
-        {
-          id: '1',
-          type: 'event',
-          title: `설비 데이터 ${metrics.activity.recent_predictions}건 분석`,
-          timestamp: '방금 전',
-          status: 'running',
-        },
-        {
-          id: '2',
-          type: 'action',
-          title: `AI 예측 정확도 ${(metrics.agi.accuracy_rate * 100).toFixed(1)}%`,
-          timestamp: '오늘',
-          status: 'completed',
-        },
-        {
-          id: '3',
-          type: 'snapshot',
-          title: `증빙 ${metrics.evidence.pending}건 검증 대기`,
-          timestamp: '최근',
-          status: metrics.evidence.pending > 0 ? 'analyzing' : 'completed',
-        },
-        {
-          id: '4',
-          type: 'bid',
-          title: `입찰 ${metrics.tender.active}건 분석 가능`,
-          timestamp: '오늘',
-          status: 'analyzing',
-        },
-      ]
-    : [];
+  // Generate recent activities from metrics (memoized)
+  const activities = useMemo<RecentActivity[]>(() => {
+    if (!metrics) return [];
+    return [
+      {
+        id: '1',
+        type: 'event',
+        title: `설비 데이터 ${metrics.activity.recent_predictions}건 분석`,
+        timestamp: '방금 전',
+        status: 'running',
+      },
+      {
+        id: '2',
+        type: 'action',
+        title: `AI 예측 정확도 ${(metrics.agi.accuracy_rate * 100).toFixed(1)}%`,
+        timestamp: '오늘',
+        status: 'completed',
+      },
+      {
+        id: '3',
+        type: 'snapshot',
+        title: `증빙 ${metrics.evidence.pending}건 검증 대기`,
+        timestamp: '최근',
+        status: metrics.evidence.pending > 0 ? 'analyzing' : 'completed',
+      },
+      {
+        id: '4',
+        type: 'bid',
+        title: `입찰 ${metrics.tender.active}건 분석 가능`,
+        timestamp: '오늘',
+        status: 'analyzing',
+      },
+    ];
+  }, [metrics]);
 
-  const statCards = [
+  // Stat cards configuration (memoized)
+  const statCards = useMemo(() => [
     {
       label: '증빙 패키지',
       value: metrics?.evidence.total || 0,
@@ -103,33 +126,7 @@ export default function DashboardPage() {
       color: 'bg-blue-600',
       subtext: '지난 24시간',
     },
-  ];
-
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'running':
-        return 'bg-green-100 text-green-700';
-      case 'completed':
-        return 'bg-blue-100 text-blue-700';
-      case 'analyzing':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'error':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const getHealthStatusColor = (status?: string) => {
-    switch (status) {
-      case 'healthy':
-        return 'text-green-600';
-      case 'degraded':
-        return 'text-yellow-600';
-      default:
-        return 'text-red-600';
-    }
-  };
+  ], [metrics]);
 
   if (loading && !metrics) {
     return (

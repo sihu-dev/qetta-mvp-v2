@@ -20,6 +20,33 @@ export {
 } from './validators';
 export type { ParseIntOptions, ParseLimitOptions } from './validators';
 
+// Response utilities
+export {
+  successResponse,
+  errorResponse,
+  validationError,
+  paginatedResponse,
+  badRequest,
+  unauthorized,
+  forbidden,
+  notFound,
+  conflict,
+  rateLimited,
+  internalError,
+  serviceUnavailable,
+  withExecutionTime,
+  withRequestId,
+  handleApiRequest,
+  ErrorCodes,
+} from './response';
+export type {
+  ApiResponse,
+  ApiError,
+  ApiMetadata,
+  PaginationMeta,
+  ErrorCode,
+} from './response';
+
 export type {
   // Evidence
   EvidenceRecord,

@@ -5,6 +5,7 @@
 
 'use client';
 
+import { memo } from 'react';
 import type { ProposalStrategy } from '@/lib/bizsupport/types';
 
 // =============================================================================
@@ -19,7 +20,7 @@ interface StrategyPanelProps {
 // 컴포넌트
 // =============================================================================
 
-export function StrategyPanel({ strategy }: StrategyPanelProps) {
+export const StrategyPanel = memo(function StrategyPanel({ strategy }: StrategyPanelProps) {
   return (
     <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
       {/* 헤더 */}
@@ -107,6 +108,8 @@ export function StrategyPanel({ strategy }: StrategyPanelProps) {
       </div>
     </div>
   );
-}
+});
+
+StrategyPanel.displayName = 'StrategyPanel';
 
 export default StrategyPanel;

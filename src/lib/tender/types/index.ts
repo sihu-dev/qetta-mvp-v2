@@ -27,6 +27,61 @@ export type DocumentFormat = 'docx' | 'xlsx' | 'pptx' | 'pdf' | 'zip';
 export type Currency = 'KRW' | 'USD' | 'EUR' | 'KZT' | 'CHF';
 
 /**
+ * Bid Raw Data - 소스별 원본 데이터 구조
+ */
+export interface BidRawData {
+  // G2B (나라장터)
+  bidNtceNo?: string;
+  bidNtceNm?: string;
+  ntceInsttNm?: string;
+  presmptPrce?: number;
+  bidNtceDt?: string;
+  bidClseDt?: string;
+  bidNtceUrl?: string;
+
+  // UNGM (UN Global Marketplace)
+  referenceNumber?: string;
+  description?: string;
+  organization?: string;
+  estimatedValue?: number;
+  deadline?: string;
+  documentLinks?: string[];
+
+  // SAM.gov
+  noticeId?: string;
+  solicitationNumber?: string;
+  title?: string;
+  agency?: string;
+  postedDate?: string;
+  responseDeadline?: string;
+  naicsCode?: string;
+  placeOfPerformance?: string;
+
+  // Kazakhstan (KZ)
+  annoNum?: string;
+  annoName?: string;
+  customerName?: string;
+  sumTru?: number;
+  startDate?: string;
+  endDate?: string;
+
+  // Common/Extended fields
+  attachments?: Array<{
+    name: string;
+    url: string;
+    size?: number;
+  }>;
+  categories?: string[];
+  keywords?: string[];
+  contact?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  [key: string]: unknown; // Allow additional source-specific fields
+}
+
+/**
  * Bid Entity - 입찰 공고
  */
 export interface Bid {
@@ -41,7 +96,7 @@ export interface Bid {
   deadline: string | null;
   status: BidStatus;
   fit_score: number | null;
-  raw_data: Record<string, unknown>;
+  raw_data: BidRawData;
   created_at: string;
   updated_at: string;
 }

@@ -5,6 +5,7 @@
  * CVP 지표를 시각적으로 표시하는 비용 절감 효과 카드
  */
 
+import { memo } from 'react';
 import {
   ArrowTrendingDownIcon,
   CurrencyDollarIcon,
@@ -58,7 +59,7 @@ const cvpMetrics: CVPMetric[] = [
   },
 ];
 
-export function CostSavingsCard() {
+export const CostSavingsCard = memo(function CostSavingsCard() {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <div className="flex items-center gap-3 mb-6">
@@ -117,6 +118,8 @@ export function CostSavingsCard() {
       </div>
     </div>
   );
-}
+});
+
+CostSavingsCard.displayName = 'CostSavingsCard';
 
 export default CostSavingsCard;

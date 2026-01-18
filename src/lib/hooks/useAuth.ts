@@ -193,7 +193,8 @@ export function useAuth(): UseAuthReturn {
       setError(null);
 
       try {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('user_profiles')
           .update(updates)
           .eq('id', user.id);

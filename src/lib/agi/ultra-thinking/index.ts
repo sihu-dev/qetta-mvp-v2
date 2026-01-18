@@ -7,11 +7,14 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { createComponentLogger } from '@/lib/logging/structured-logger';
 import type {
   BusinessRequirement,
   TechCombination,
   TechRecommendation,
 } from '../types';
+
+const log = createComponentLogger('TechCombiner');
 
 const anthropic = new Anthropic();
 
@@ -246,7 +249,7 @@ export class TechCombiner {
         reasoning: parsed.reasoning || '',
       };
     } catch (error) {
-      console.error('Failed to parse Tech Combiner response:', error);
+      log.error('Failed to parse Tech Combiner response', error);
       return {
         combinations: [],
         bestChoice: '',
